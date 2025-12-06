@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/private";
-import type { Service, ServiceCheck, ServiceStats, User } from "../../types";
+import type { Group, Service, ServiceCheck, ServiceStats, User } from "../../types";
 
 const API_URL = env.API_URL || "http://localhost:3001";
 
@@ -183,4 +183,35 @@ export async function startChecker(serviceId: string): Promise<void> {
 
 export async function stopChecker(serviceId: string): Promise<void> {
 	await request(`/checker/stop/${serviceId}`, { method: "POST" });
+}
+
+export async function updateServicePositions(
+	positions: Array<{ id: string; position: number; groupName?: string }>,
+): Promise<void> {
+	await request("/services/positions", {
+		method: "PUT",
+		body: JSON.stringify({ positions }),
+	});
+}
+
+export async function getGroups(): Promise<Group[]> {
+	const result = await request<{ groups: Group[] }>("/groups");
+	return result.groups;
+}
+
+export async function upsertGroup(name: string, position?: number): Promise<Group> {
+	const result = await request<{ group: Group }>("/groups", {
+		method: "POST",
+		body: JSON.stringify({ name, position }),
+	});
+	return result.group;
+}
+
+export async function updateGroupPositions(
+	positions: Array<{ name: string; position: number }>,
+): Promise<void> {
+	await request("/groups/positions", {
+		method: "PUT",
+		body: JSON.stringify({ positions }),
+	});
 }

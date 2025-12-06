@@ -1,5 +1,5 @@
 import { sql } from "../index";
-import type { Service } from "../types";
+import type { Group, Service } from "../types";
 
 function rowToService(row: Record<string, unknown>): Service {
 	return {
@@ -13,17 +13,27 @@ function rowToService(row: Record<string, unknown>): Service {
 		enabled: row.enabled as boolean,
 		isPublic: row.is_public as boolean,
 		groupName: row.group_name as string | null,
+		position: (row.position as number) || 0,
 		createdBy: row.created_by as string,
 		createdAt: row.created_at as string,
 		updatedAt: row.updated_at as string,
 	};
 }
 
+function rowToGroup(row: Record<string, unknown>): Group {
+	return {
+		id: row.id as string,
+		name: row.name as string,
+		position: (row.position as number) || 0,
+		createdAt: row.created_at as string,
+	};
+}
+
 export async function list(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
-		ORDER BY group_name NULLS LAST, name ASC
+		ORDER BY position ASC, created_at ASC
 	`;
 
 	return Response.json({ services: rows.map(rowToService) });
@@ -31,10 +41,10 @@ export async function list(): Promise<Response> {
 
 export async function listPublic(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE is_public = true AND enabled = true
-		ORDER BY group_name NULLS LAST, name ASC
+		ORDER BY position ASC, created_at ASC
 	`;
 
 	return Response.json({ services: rows.map(rowToService) });
@@ -51,10 +61,10 @@ export async function listByUser(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE created_by = ${userId}
-		ORDER BY group_name NULLS LAST, name ASC
+		ORDER BY position ASC, created_at ASC
 	`;
 
 	return Response.json({ services: rows.map(rowToService) });
@@ -71,7 +81,7 @@ export async function get(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -96,6 +106,7 @@ export async function create(req: Request): Promise<Response> {
 		enabled = true,
 		isPublic = false,
 		groupName = null,
+		position,
 	} = body;
 
 	if (!name || !url || !createdBy) {
@@ -107,13 +118,16 @@ export async function create(req: Request): Promise<Response> {
 
 	const id = crypto.randomUUID();
 
+	const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM services`;
+	const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
+
 	await sql`
-		INSERT INTO services (id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by)
-		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${createdBy})
+		INSERT INTO services (id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by)
+		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${nextPosition}, ${createdBy})
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -142,6 +156,7 @@ export async function update(
 		enabled,
 		isPublic,
 		groupName,
+		position,
 	} = body;
 
 	const updates: Record<string, unknown> = {};
@@ -154,6 +169,7 @@ export async function update(
 	if (enabled !== undefined) updates.enabled = enabled;
 	if (isPublic !== undefined) updates.is_public = isPublic;
 	if (groupName !== undefined) updates.group_name = groupName;
+	if (position !== undefined) updates.position = position;
 
 	if (Object.keys(updates).length === 0) {
 		return Response.json({ error: "No fields to update" }, { status: 400 });
@@ -166,7 +182,7 @@ export async function update(
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -189,6 +205,79 @@ export async function remove(
 	}
 
 	await sql`DELETE FROM services WHERE id = ${id}`;
+
+	return Response.json({ success: true });
+}
+
+export async function updatePositions(req: Request): Promise<Response> {
+	const body = await req.json();
+	const { positions } = body;
+
+	if (!Array.isArray(positions)) {
+		return Response.json({ error: "Positions array required" }, { status: 400 });
+	}
+
+	for (const { id, position, groupName } of positions) {
+		if (groupName !== undefined) {
+			await sql`UPDATE services SET position = ${position}, group_name = ${groupName}, updated_at = NOW() WHERE id = ${id}`;
+		} else {
+			await sql`UPDATE services SET position = ${position}, updated_at = NOW() WHERE id = ${id}`;
+		}
+	}
+
+	return Response.json({ success: true });
+}
+
+export async function listGroups(): Promise<Response> {
+	const rows = await sql`
+		SELECT id, name, position, created_at
+		FROM groups
+		ORDER BY position ASC, name ASC
+	`;
+
+	return Response.json({ groups: rows.map(rowToGroup) });
+}
+
+export async function upsertGroup(req: Request): Promise<Response> {
+	const body = await req.json();
+	const { name, position } = body;
+
+	if (!name) {
+		return Response.json({ error: "Name required" }, { status: 400 });
+	}
+
+	const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
+
+	if (existing.length > 0) {
+		await sql`UPDATE groups SET position = ${position ?? 0} WHERE name = ${name}`;
+	} else {
+		const id = crypto.randomUUID();
+		const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM groups`;
+		const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
+		await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${nextPosition})`;
+	}
+
+	const rows = await sql`SELECT id, name, position, created_at FROM groups WHERE name = ${name}`;
+	return Response.json({ group: rowToGroup(rows[0]) });
+}
+
+export async function updateGroupPositions(req: Request): Promise<Response> {
+	const body = await req.json();
+	const { positions } = body;
+
+	if (!Array.isArray(positions)) {
+		return Response.json({ error: "Positions array required" }, { status: 400 });
+	}
+
+	for (const { name, position } of positions) {
+		const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
+		if (existing.length > 0) {
+			await sql`UPDATE groups SET position = ${position} WHERE name = ${name}`;
+		} else {
+			const id = crypto.randomUUID();
+			await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${position})`;
+		}
+	}
 
 	return Response.json({ success: true });
 }

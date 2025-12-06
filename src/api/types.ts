@@ -1,1 +1,1 @@
-export type { Service, ServiceCheck, SqlMigration, User } from "../types";
+export type { Group, Service, ServiceCheck, SqlMigration, User } from "../types";

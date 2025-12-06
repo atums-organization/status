@@ -17,9 +17,17 @@ export interface Service {
 	enabled: boolean;
 	isPublic: boolean;
 	groupName: string | null;
+	position: number;
 	createdBy: string;
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface Group {
+	id: string;
+	name: string;
+	position: number;
+	createdAt: string;
 }
 
 export interface ServiceCheck {

@@ -45,12 +45,24 @@ const routes: Route[] = [
 		handlers: { GET: services.listByUser },
 	},
 	{
+		pattern: /^\/services\/positions$/,
+		handlers: { PUT: services.updatePositions },
+	},
+	{
 		pattern: /^\/services\/([^/]+)$/,
 		handlers: {
 			GET: services.get,
 			PUT: services.update,
 			DELETE: services.remove,
 		},
+	},
+	{
+		pattern: /^\/groups$/,
+		handlers: { GET: services.listGroups, POST: services.upsertGroup },
+	},
+	{
+		pattern: /^\/groups\/positions$/,
+		handlers: { PUT: services.updateGroupPositions },
 	},
 	{
 		pattern: /^\/checks\/service\/([^/]+)$/,

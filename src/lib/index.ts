@@ -1,4 +1,5 @@
 export type {
+	Group,
 	Notification,
 	NotificationType,
 	Service,

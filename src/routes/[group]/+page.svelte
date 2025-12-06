@@ -151,9 +151,6 @@ function formatGraphDate(date: string): string {
 		<h1><a href="/" class="brand-link"><span class="brand">atums</span>/status</a></h1>
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
-			{#if data.user}
-				<a href="/services" class="nav-link">services</a>
-			{/if}
 		</nav>
 		{#if data.user}
 			<UserMenu user={data.user} />
@@ -171,10 +168,12 @@ function formatGraphDate(date: string): string {
 		<div class="services-list">
 			{#each data.services as service}
 				{@const check = data.checks[service.id]}
-				<button
-					type="button"
+				<div
 					class="service-card"
 					onclick={() => openServiceDetail(service)}
+					onkeydown={(e) => e.key === "Enter" && openServiceDetail(service)}
+					role="button"
+					tabindex="0"
 				>
 					<span
 						class="service-status"
@@ -223,7 +222,7 @@ function formatGraphDate(date: string): string {
 							{/if}
 						{/if}
 					</div>
-				</button>
+				</div>
 			{/each}
 		</div>
 	</main>

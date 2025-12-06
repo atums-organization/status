@@ -1,0 +1,13 @@
+{
+	"languages": {
+		"JavaScript": {
+			"language_servers": ["!biome", "eslint", "..."]
+		},
+		"TypeScript": {
+			"language_servers": ["!biome", "eslint", "..."]
+		},
+		"TSX": {
+			"language_servers": ["!biome", "eslint", "..."]
+		}
+	}
+}

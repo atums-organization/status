@@ -189,10 +189,13 @@ function formatGraphDate(date: string): string {
 								<span class="visibility-badge private">private</span>
 							{/if}
 						</div>
-						{#if service.description}
-							<p class="description">{service.description}</p>
-						{/if}
-						<span class="url">{service.displayUrl || service.url}</span>
+						<a
+							href={service.displayUrl || service.url}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="url"
+							onclick={(e) => e.stopPropagation()}
+						>{service.displayUrl || service.url}</a>
 						<div class="meta">
 							{#if check}
 								<span class="response-time">{formatTime(check.responseTime)}</span>
@@ -206,6 +209,19 @@ function formatGraphDate(date: string): string {
 								<span class="pending-text">pending first check</span>
 							{/if}
 						</div>
+						{#if service.description}
+							{#if service.description.startsWith('http://') || service.description.startsWith('https://')}
+								<a
+									href={service.description}
+									target="_blank"
+									rel="noopener noreferrer"
+									class="description description-link"
+									onclick={(e) => e.stopPropagation()}
+								>{service.description}</a>
+							{:else}
+								<p class="description">{service.description}</p>
+							{/if}
+						{/if}
 					</div>
 				</button>
 			{/each}

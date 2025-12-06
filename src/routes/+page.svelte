@@ -58,11 +58,18 @@ async function openServiceDetail(service: Service) {
 	serviceStats = null;
 
 	try {
-		const response = await fetch(`/api/services/${service.id}`);
-		if (response.ok) {
-			const result = await response.json();
-			serviceChecks = result.checks ?? [];
-			serviceStats = result.stats ?? null;
+		const [checksRes, statsRes] = await Promise.all([
+			fetch(`/api/checks/service/${service.id}?limit=100`),
+			fetch(`/api/checks/service/${service.id}/stats`),
+		]);
+
+		if (checksRes.ok) {
+			const checksData = await checksRes.json();
+			serviceChecks = checksData.checks ?? [];
+		}
+		if (statsRes.ok) {
+			const statsData = await statsRes.json();
+			serviceStats = statsData.stats ?? null;
 		}
 	} catch {
 		serviceChecks = [];

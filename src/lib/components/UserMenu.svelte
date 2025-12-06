@@ -105,7 +105,7 @@ function close() {
 		background: var(--color-bg-elevated);
 		border: 1px solid var(--color-border);
 		box-shadow: var(--shadow-md);
-		z-index: 100;
+		z-index: 1000;
 	}
 
 	.dropdown-header {

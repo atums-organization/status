@@ -1,0 +1,27 @@
+.empty {
+	text-align: center;
+	padding: var(--spacing-2xl);
+	color: var(--color-text-secondary);
+}
+
+.empty p {
+	margin: 0 0 var(--spacing-md);
+}
+
+.login-hint {
+	margin-top: var(--spacing-sm);
+	font-size: var(--text-sm);
+}
+
+.login-hint a {
+	color: var(--color-accent);
+}
+
+.add-link {
+	color: var(--color-accent);
+	text-decoration: none;
+}
+
+.add-link:hover {
+	text-decoration: underline;
+}

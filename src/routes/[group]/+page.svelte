@@ -32,26 +32,6 @@ function formatShortTime(date: string): string {
 	});
 }
 
-const groupedServices = $derived(() => {
-	const groups: Record<string, Service[]> = {};
-	const ungrouped: Service[] = [];
-
-	if (!data.services) return { groups, ungrouped };
-
-	for (const service of data.services) {
-		if (service.groupName) {
-			if (!groups[service.groupName]) {
-				groups[service.groupName] = [];
-			}
-			groups[service.groupName].push(service);
-		} else {
-			ungrouped.push(service);
-		}
-	}
-
-	return { groups, ungrouped };
-});
-
 async function openServiceDetail(service: Service) {
 	selectedService = service;
 	loading = true;
@@ -168,9 +148,9 @@ function formatGraphDate(date: string): string {
 
 <div class="container">
 	<header class="header">
-		<h1><span class="brand">atums</span>/status</h1>
+		<h1><a href="/" class="brand-link"><span class="brand">atums</span>/status</a></h1>
 		<nav class="nav">
-			<a href="/" class="nav-link active">index</a>
+			<a href="/" class="nav-link">index</a>
 			{#if data.user}
 				<a href="/services" class="nav-link">services</a>
 			{/if}
@@ -183,110 +163,53 @@ function formatGraphDate(date: string): string {
 	</header>
 
 	<main class="main centered">
-		{#if !data.services?.length}
-			<div class="empty">
-				{#if data.user}
-					<p>No services configured yet.</p>
-					<a href="/services/new" class="add-link">Add your first service</a>
-				{:else}
-					<p>No public services available.</p>
-					<p class="login-hint"><a href="/login">Log in</a> to manage services.</p>
-				{/if}
-			</div>
-		{:else}
-			{#each Object.entries(groupedServices().groups) as [groupName, services]}
-				<div class="service-group">
-					<h2 class="group-title">{groupName}</h2>
-					<div class="services-list">
-						{#each services as service}
-							{@const check = data.checks[service.id]}
-							<button
-								type="button"
-								class="service-card"
-								onclick={() => openServiceDetail(service)}
-							>
-								<span
-									class="service-status"
-									class:success={check?.success}
-									class:error={check && !check.success}
-									class:pending={!check}
-								></span>
-								<div class="service-info">
-									<div class="service-header">
-										<h3>{service.name}</h3>
-										{#if data.user && !service.isPublic}
-											<span class="visibility-badge private">private</span>
-										{/if}
-									</div>
-									{#if service.description}
-										<p class="description">{service.description}</p>
-									{/if}
-									<span class="url">{service.displayUrl || service.url}</span>
-									<div class="meta">
-										{#if check}
-											<span class="response-time">{formatTime(check.responseTime)}</span>
-											<span
-												class="status-code"
-												class:success={check.success}
-												class:error={!check.success}
-											>{check.statusCode ?? "error"}</span>
-											<span class="last-check">checked {formatDate(check.checkedAt)}</span>
-										{:else}
-											<span class="pending-text">pending first check</span>
-										{/if}
-									</div>
-								</div>
-							</button>
-						{/each}
-					</div>
-				</div>
-			{/each}
+		<div class="group-header">
+			<h2 class="group-title">{data.groupName}</h2>
+			<a href="/" class="back-link">view all</a>
+		</div>
 
-			{#if groupedServices().ungrouped.length > 0}
-				<div class="services-list" class:has-groups={Object.keys(groupedServices().groups).length > 0}>
-					{#each groupedServices().ungrouped as service}
-						{@const check = data.checks[service.id]}
-						<button
-							type="button"
-							class="service-card"
-							onclick={() => openServiceDetail(service)}
-						>
-							<span
-								class="service-status"
-								class:success={check?.success}
-								class:error={check && !check.success}
-								class:pending={!check}
-							></span>
-							<div class="service-info">
-								<div class="service-header">
-									<h3>{service.name}</h3>
-									{#if data.user && !service.isPublic}
-										<span class="visibility-badge private">private</span>
-									{/if}
-								</div>
-								{#if service.description}
-									<p class="description">{service.description}</p>
-								{/if}
-								<span class="url">{service.displayUrl || service.url}</span>
-								<div class="meta">
-									{#if check}
-										<span class="response-time">{formatTime(check.responseTime)}</span>
-										<span
-											class="status-code"
-											class:success={check.success}
-											class:error={!check.success}
-										>{check.statusCode ?? "error"}</span>
-										<span class="last-check">checked {formatDate(check.checkedAt)}</span>
-									{:else}
-										<span class="pending-text">pending first check</span>
-									{/if}
-								</div>
-							</div>
-						</button>
-					{/each}
-				</div>
-			{/if}
-		{/if}
+		<div class="services-list">
+			{#each data.services as service}
+				{@const check = data.checks[service.id]}
+				<button
+					type="button"
+					class="service-card"
+					onclick={() => openServiceDetail(service)}
+				>
+					<span
+						class="service-status"
+						class:success={check?.success}
+						class:error={check && !check.success}
+						class:pending={!check}
+					></span>
+					<div class="service-info">
+						<div class="service-header">
+							<h3>{service.name}</h3>
+							{#if data.user && !service.isPublic}
+								<span class="visibility-badge private">private</span>
+							{/if}
+						</div>
+						{#if service.description}
+							<p class="description">{service.description}</p>
+						{/if}
+						<span class="url">{service.displayUrl || service.url}</span>
+						<div class="meta">
+							{#if check}
+								<span class="response-time">{formatTime(check.responseTime)}</span>
+								<span
+									class="status-code"
+									class:success={check.success}
+									class:error={!check.success}
+								>{check.statusCode ?? "error"}</span>
+								<span class="last-check">checked {formatDate(check.checkedAt)}</span>
+							{:else}
+								<span class="pending-text">pending first check</span>
+							{/if}
+						</div>
+					</div>
+				</button>
+			{/each}
+		</div>
 	</main>
 </div>
 

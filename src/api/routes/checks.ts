@@ -19,6 +19,7 @@ function rowToService(row: Record<string, unknown>): Service {
 		name: row.name as string,
 		description: row.description as string | null,
 		url: row.url as string,
+		displayUrl: row.display_url as string | null,
 		expectedStatus: row.expected_status as number,
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
@@ -207,7 +208,7 @@ export async function runCheck(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${serviceId}
 	`;
@@ -233,7 +234,7 @@ export async function startChecker(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${serviceId}
 	`;
@@ -285,7 +286,7 @@ export async function stopChecker(
 
 export async function initializeCheckers(): Promise<void> {
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE enabled = true
 	`;

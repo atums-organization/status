@@ -42,7 +42,18 @@ const { data, form }: { data: PageData; form: ActionData } = $props();
 					value={form?.url ?? ""}
 					required
 				/>
-				<label for="url">URL</label>
+				<label for="url">Check URL</label>
+			</div>
+
+			<div class="form-group">
+				<input
+					type="text"
+					id="displayUrl"
+					name="displayUrl"
+					placeholder=" "
+					value={form?.displayUrl ?? ""}
+				/>
+				<label for="displayUrl">Display URL (optional)</label>
 			</div>
 
 			<div class="form-group">

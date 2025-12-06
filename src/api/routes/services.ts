@@ -7,6 +7,7 @@ function rowToService(row: Record<string, unknown>): Service {
 		name: row.name as string,
 		description: row.description as string | null,
 		url: row.url as string,
+		displayUrl: row.display_url as string | null,
 		expectedStatus: row.expected_status as number,
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
@@ -20,7 +21,7 @@ function rowToService(row: Record<string, unknown>): Service {
 
 export async function list(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		ORDER BY group_name NULLS LAST, name ASC
 	`;
@@ -30,7 +31,7 @@ export async function list(): Promise<Response> {
 
 export async function listPublic(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE is_public = true AND enabled = true
 		ORDER BY group_name NULLS LAST, name ASC
@@ -50,7 +51,7 @@ export async function listByUser(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE created_by = ${userId}
 		ORDER BY group_name NULLS LAST, name ASC
@@ -70,7 +71,7 @@ export async function get(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -89,6 +90,7 @@ export async function create(req: Request): Promise<Response> {
 		url,
 		createdBy,
 		description,
+		displayUrl = null,
 		expectedStatus = 200,
 		checkInterval = 60,
 		enabled = true,
@@ -106,12 +108,12 @@ export async function create(req: Request): Promise<Response> {
 	const id = crypto.randomUUID();
 
 	await sql`
-		INSERT INTO services (id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by)
-		VALUES (${id}, ${name}, ${description || null}, ${url}, ${expectedStatus}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${createdBy})
+		INSERT INTO services (id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by)
+		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${createdBy})
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -134,6 +136,7 @@ export async function update(
 		name,
 		description,
 		url: serviceUrl,
+		displayUrl,
 		expectedStatus,
 		checkInterval,
 		enabled,
@@ -145,6 +148,7 @@ export async function update(
 	if (name !== undefined) updates.name = name;
 	if (description !== undefined) updates.description = description;
 	if (serviceUrl !== undefined) updates.url = serviceUrl;
+	if (displayUrl !== undefined) updates.display_url = displayUrl;
 	if (expectedStatus !== undefined) updates.expected_status = expectedStatus;
 	if (checkInterval !== undefined) updates.check_interval = checkInterval;
 	if (enabled !== undefined) updates.enabled = enabled;
@@ -162,7 +166,7 @@ export async function update(
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;

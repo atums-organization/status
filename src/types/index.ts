@@ -11,6 +11,7 @@ export interface Service {
 	name: string;
 	description: string | null;
 	url: string;
+	displayUrl: string | null;
 	expectedStatus: number;
 	checkInterval: number;
 	enabled: boolean;

@@ -71,10 +71,10 @@ $effect(() => {
 								<p class="description">{service.description}</p>
 							{/if}
 							<a
-								href={service.url}
+								href={service.displayUrl || service.url}
 								target="_blank"
 								rel="noopener noreferrer"
-								class="url">{service.url}</a
+								class="url">{service.displayUrl || service.url}</a
 							>
 							<div class="meta">
 								{#if check}
@@ -194,7 +194,18 @@ $effect(() => {
 						value={editingService.url}
 						required
 					/>
-					<label for="edit-url">URL</label>
+					<label for="edit-url">Check URL</label>
+				</div>
+
+				<div class="form-group">
+					<input
+						type="text"
+						id="edit-displayUrl"
+						name="displayUrl"
+						placeholder=" "
+						value={editingService.displayUrl ?? ""}
+					/>
+					<label for="edit-displayUrl">Display URL (optional)</label>
 				</div>
 
 				<div class="form-group">

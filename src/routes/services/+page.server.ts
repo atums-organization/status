@@ -88,6 +88,7 @@ export const actions: Actions = {
 		const serviceId = formData.get("id")?.toString();
 		const name = formData.get("name")?.toString().trim();
 		const url = formData.get("url")?.toString().trim();
+		const displayUrl = formData.get("displayUrl")?.toString().trim() || null;
 		const description = formData.get("description")?.toString().trim() || null;
 		const expectedStatus = Number.parseInt(
 			formData.get("expectedStatus")?.toString() || "200",
@@ -155,6 +156,7 @@ export const actions: Actions = {
 		await api.updateService(serviceId, {
 			name,
 			url,
+			displayUrl,
 			description,
 			expectedStatus,
 			checkInterval,

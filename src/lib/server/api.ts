@@ -88,6 +88,7 @@ export async function createService(
 	createdBy: string,
 	options?: {
 		description?: string;
+		displayUrl?: string | null;
 		expectedStatus?: number;
 		checkInterval?: number;
 		enabled?: boolean;
@@ -108,6 +109,7 @@ export async function updateService(
 		name?: string;
 		description?: string | null;
 		url?: string;
+		displayUrl?: string | null;
 		expectedStatus?: number;
 		checkInterval?: number;
 		enabled?: boolean;

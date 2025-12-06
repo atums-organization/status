@@ -34,6 +34,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const name = formData.get("name")?.toString().trim();
 		const url = formData.get("url")?.toString().trim();
+		const displayUrl = formData.get("displayUrl")?.toString().trim() || null;
 		const description =
 			formData.get("description")?.toString().trim() || undefined;
 		const expectedStatus = Number.parseInt(
@@ -53,6 +54,7 @@ export const actions: Actions = {
 				error: "Name is required",
 				name,
 				url,
+				displayUrl,
 				description,
 				expectedStatus,
 				checkInterval,
@@ -65,6 +67,7 @@ export const actions: Actions = {
 				error: "URL is required",
 				name,
 				url,
+				displayUrl,
 				description,
 				expectedStatus,
 				checkInterval,
@@ -79,6 +82,7 @@ export const actions: Actions = {
 				error: "Invalid URL format",
 				name,
 				url,
+				displayUrl,
 				description,
 				expectedStatus,
 				checkInterval,
@@ -95,6 +99,7 @@ export const actions: Actions = {
 				error: "Expected status must be a valid HTTP status code",
 				name,
 				url,
+				displayUrl,
 				description,
 				expectedStatus,
 				checkInterval,
@@ -111,6 +116,7 @@ export const actions: Actions = {
 				error: "Check interval must be between 10 and 3600 seconds",
 				name,
 				url,
+				displayUrl,
 				description,
 				expectedStatus,
 				checkInterval,
@@ -120,6 +126,7 @@ export const actions: Actions = {
 
 		const service = await api.createService(name, url, user.id, {
 			description,
+			displayUrl,
 			expectedStatus,
 			checkInterval,
 			enabled,

@@ -13,6 +13,7 @@ await runMigrations(sql);
 await initializeCheckers();
 
 const server = Bun.serve({
+	hostname: process.env.API_HOST || "0.0.0.0",
 	port: process.env.API_PORT || 3001,
 	async fetch(req) {
 		const url = new URL(req.url);
@@ -28,4 +29,4 @@ const server = Bun.serve({
 	},
 });
 
-logger.info(`API server running on http://localhost:${server.port}`);
+logger.info(`API server running on http://${server.hostname}:${server.port}`);

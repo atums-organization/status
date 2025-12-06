@@ -1,0 +1,21 @@
+.welcome {
+	text-align: center;
+	padding: var(--spacing-2xl);
+}
+
+.welcome h2 {
+	margin: 0 0 var(--spacing-sm);
+	font-size: var(--text-2xl);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+}
+
+.welcome p {
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.configure-btn {
+	display: inline-block;
+	margin-top: var(--spacing-lg);
+}

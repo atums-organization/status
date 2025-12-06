@@ -35,6 +35,8 @@ const groupedServices = $derived(() => {
 	const groups: Record<string, Service[]> = {};
 	const ungrouped: Service[] = [];
 
+	if (!data.services) return { groups, ungrouped };
+
 	for (const service of data.services) {
 		if (service.groupName) {
 			if (!groups[service.groupName]) {
@@ -58,12 +60,13 @@ async function openServiceDetail(service: Service) {
 	try {
 		const response = await fetch(`/api/services/${service.id}`);
 		if (response.ok) {
-			const data = await response.json();
-			serviceChecks = data.checks;
-			serviceStats = data.stats;
+			const result = await response.json();
+			serviceChecks = result.checks ?? [];
+			serviceStats = result.stats ?? null;
 		}
-	} catch (err) {
-		console.error("Failed to load service details:", err);
+	} catch {
+		serviceChecks = [];
+		serviceStats = null;
 	} finally {
 		loading = false;
 	}
@@ -172,7 +175,7 @@ function formatGraphDate(date: string): string {
 	</header>
 
 	<main class="main centered">
-		{#if data.services.length === 0}
+		{#if !data.services?.length}
 			<div class="empty">
 				{#if data.user}
 					<p>No services configured yet.</p>

@@ -7,25 +7,31 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
 
 	if (!sessionId) {
-		const services = await api.getPublicServices();
+		const [services, groups] = await Promise.all([
+			api.getPublicServices(),
+			api.getGroups(),
+		]);
 		const serviceIds = services.map((s) => s.id);
 		const checks =
 			serviceIds.length > 0
 				? await api.getLatestChecksForServices(serviceIds)
 				: {};
-		return { user: null, services, checks, groups: [] };
+		return { user: null, services, checks, groups };
 	}
 
 	const user = await api.getUserById(sessionId);
 	if (!user) {
 		clearSession(cookies);
-		const services = await api.getPublicServices();
+		const [services, groups] = await Promise.all([
+			api.getPublicServices(),
+			api.getGroups(),
+		]);
 		const serviceIds = services.map((s) => s.id);
 		const checks =
 			serviceIds.length > 0
 				? await api.getLatestChecksForServices(serviceIds)
 				: {};
-		return { user: null, services, checks, groups: [] };
+		return { user: null, services, checks, groups };
 	}
 
 	const [services, groups] = await Promise.all([

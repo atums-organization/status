@@ -51,11 +51,21 @@
 	}
 
 	function formatDate(date: string): string {
-		return new Date(date).toLocaleString();
+		return new Date(date).toLocaleString(undefined, {
+			timeZone: data.timezone,
+			hour12: false,
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		});
 	}
 
 	function formatShortTime(date: string): string {
-		return new Date(date).toLocaleTimeString([], {
+		return new Date(date).toLocaleTimeString(undefined, {
+			timeZone: data.timezone,
+			hour12: false,
 			hour: "2-digit",
 			minute: "2-digit",
 		});
@@ -109,6 +119,46 @@
 		];
 
 		return allGroups;
+	});
+
+	const overallUptime = $derived.by(() => {
+		const uptime = data.uptime || {};
+		const services = data.services || [];
+		if (services.length === 0) return null;
+
+		const values = services
+			.map((s) => uptime[s.id])
+			.filter((u) => u && u.totalChecks > 0);
+
+		if (values.length === 0) return null;
+
+		const avg =
+			values.reduce((sum, u) => sum + u.uptimePercent, 0) / values.length;
+		return Math.round(avg * 100) / 100;
+	});
+
+	const groupUptime = $derived.by(() => {
+		const uptime = data.uptime || {};
+		const result: Record<string, number | null> = {};
+
+		for (const [groupName, services] of Object.entries(
+			groupedServices.groups,
+		)) {
+			const values = services
+				.map((s) => uptime[s.id])
+				.filter((u) => u && u.totalChecks > 0);
+
+			if (values.length === 0) {
+				result[groupName] = null;
+			} else {
+				const avg =
+					values.reduce((sum, u) => sum + u.uptimePercent, 0) /
+					values.length;
+				result[groupName] = Math.round(avg * 100) / 100;
+			}
+		}
+
+		return result;
 	});
 
 	async function openServiceDetail(service: Service) {
@@ -356,22 +406,27 @@
 			(now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
 		);
 
+		const timeOpts: Intl.DateTimeFormatOptions = {
+			timeZone: data.timezone,
+			hour12: false,
+			hour: "2-digit",
+			minute: "2-digit",
+		};
+
 		if (diffDays === 0) {
-			return d.toLocaleTimeString([], {
-				hour: "2-digit",
-				minute: "2-digit",
-			});
+			return d.toLocaleTimeString(undefined, timeOpts);
 		}
 		if (diffDays === 1) {
-			return (
-				"Yesterday " +
-				d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-			);
+			return "Yesterday " + d.toLocaleTimeString(undefined, timeOpts);
 		}
 		return (
-			d.toLocaleDateString([], { month: "short", day: "numeric" }) +
+			d.toLocaleDateString(undefined, {
+				timeZone: data.timezone,
+				month: "short",
+				day: "numeric",
+			}) +
 			" " +
-			d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+			d.toLocaleTimeString(undefined, timeOpts)
 		);
 	}
 </script>
@@ -381,6 +436,12 @@
 		<h1><span class="brand">atums</span>/status</h1>
 		<nav class="nav">
 			<a href="/" class="nav-link active">index</a>
+			<a
+				href="https://heliopolis.live/atums/status"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="nav-link">source</a
+			>
 		</nav>
 		{#if data.user}
 			<UserMenu user={data.user} />
@@ -421,6 +482,19 @@
 				{/if}
 			</div>
 		{:else}
+			{#if overallUptime !== null}
+				<div class="overall-uptime">
+					<span class="uptime-label">overall uptime</span>
+					<span
+						class="uptime-value"
+						class:success={overallUptime >= 99}
+						class:warning={overallUptime >= 95 &&
+							overallUptime < 99}
+						class:error={overallUptime < 95}
+						>{overallUptime.toFixed(2)}%</span
+					>
+				</div>
+			{/if}
 			{#each sortedGroups as group (group.name)}
 				{@const services = groupedServices.groups[group.name] || []}
 				{#if services.length > 0 || editMode}
@@ -454,6 +528,19 @@
 							tabindex={editMode ? 0 : -1}
 						>
 							<h2 class="group-title">{group.name}</h2>
+							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
+								<span
+									class="group-uptime"
+									class:success={groupUptime[group.name]! >=
+										99}
+									class:warning={groupUptime[group.name]! >=
+										95 && groupUptime[group.name]! < 99}
+									class:error={groupUptime[group.name]! < 95}
+									>{groupUptime[group.name]?.toFixed(
+										2,
+									)}%</span
+								>
+							{/if}
 							{#if editMode}
 								<span class="drag-handle">drag</span>
 							{/if}
@@ -472,6 +559,8 @@
 						>
 							{#each services as service (service.id)}
 								{@const check = data.checks[service.id]}
+								{@const serviceUptime =
+									data.uptime?.[service.id]}
 								<div
 									class="service-card"
 									class:dragging={draggedService?.id ===
@@ -500,12 +589,31 @@
 									role="button"
 									tabindex="0"
 								>
-									<span
-										class="service-status"
-										class:success={check?.success}
-										class:error={check && !check.success}
-										class:pending={!check}
-									></span>
+									<div class="service-status-area">
+										{#if serviceUptime && serviceUptime.totalChecks > 0}
+											<span
+												class="service-uptime"
+												class:success={serviceUptime.uptimePercent >=
+													99}
+												class:warning={serviceUptime.uptimePercent >=
+													95 &&
+													serviceUptime.uptimePercent <
+														99}
+												class:error={serviceUptime.uptimePercent <
+													95}
+												>{serviceUptime.uptimePercent.toFixed(
+													1,
+												)}%</span
+											>
+										{/if}
+										<span
+											class="service-status"
+											class:success={check?.success}
+											class:error={check &&
+												!check.success}
+											class:pending={!check}
+										></span>
+									</div>
 									<div class="service-info">
 										<div class="service-header">
 											<h3>{service.name}</h3>
@@ -632,6 +740,7 @@
 				>
 					{#each groupedServices.ungrouped as service (service.id)}
 						{@const check = data.checks[service.id]}
+						{@const serviceUptime = data.uptime?.[service.id]}
 						<div
 							class="service-card"
 							class:dragging={draggedService?.id === service.id}
@@ -653,12 +762,29 @@
 							role="button"
 							tabindex="0"
 						>
-							<span
-								class="service-status"
-								class:success={check?.success}
-								class:error={check && !check.success}
-								class:pending={!check}
-							></span>
+							<div class="service-status-area">
+								{#if serviceUptime && serviceUptime.totalChecks > 0}
+									<span
+										class="service-uptime"
+										class:success={serviceUptime.uptimePercent >=
+											99}
+										class:warning={serviceUptime.uptimePercent >=
+											95 &&
+											serviceUptime.uptimePercent < 99}
+										class:error={serviceUptime.uptimePercent <
+											95}
+										>{serviceUptime.uptimePercent.toFixed(
+											1,
+										)}%</span
+									>
+								{/if}
+								<span
+									class="service-status"
+									class:success={check?.success}
+									class:error={check && !check.success}
+									class:pending={!check}
+								></span>
+							</div>
 							<div class="service-info">
 								<div class="service-header">
 									<h3>{service.name}</h3>

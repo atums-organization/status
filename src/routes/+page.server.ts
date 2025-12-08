@@ -2,9 +2,11 @@ import { fail } from "@sveltejs/kit";
 import { clearSession, getSessionId } from "$lib/server";
 import * as api from "$lib/server/api";
 import type { Actions, PageServerLoad } from "./$types";
+import { env } from "$env/dynamic/public";
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
+	const timezone = env.PUBLIC_TIMEZONE || "UTC";
 
 	if (!sessionId) {
 		const [services, groups] = await Promise.all([
@@ -12,11 +14,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
 			api.getGroups(),
 		]);
 		const serviceIds = services.map((s) => s.id);
-		const checks =
+		const [checks, uptime] =
 			serviceIds.length > 0
-				? await api.getLatestChecksForServices(serviceIds)
-				: {};
-		return { user: null, services, checks, groups };
+				? await Promise.all([
+						api.getLatestChecksForServices(serviceIds),
+						api.getUptimeForServices(serviceIds),
+					])
+				: [{}, {}];
+		return { user: null, services, checks, groups, uptime, timezone };
 	}
 
 	const user = await api.getUserById(sessionId);
@@ -27,11 +32,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
 			api.getGroups(),
 		]);
 		const serviceIds = services.map((s) => s.id);
-		const checks =
+		const [checks, uptime] =
 			serviceIds.length > 0
-				? await api.getLatestChecksForServices(serviceIds)
-				: {};
-		return { user: null, services, checks, groups };
+				? await Promise.all([
+						api.getLatestChecksForServices(serviceIds),
+						api.getUptimeForServices(serviceIds),
+					])
+				: [{}, {}];
+		return { user: null, services, checks, groups, uptime, timezone };
 	}
 
 	const [services, groups] = await Promise.all([
@@ -39,12 +47,15 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		api.getGroups(),
 	]);
 	const serviceIds = services.map((s) => s.id);
-	const checks =
+	const [checks, uptime] =
 		serviceIds.length > 0
-			? await api.getLatestChecksForServices(serviceIds)
-			: {};
+			? await Promise.all([
+					api.getLatestChecksForServices(serviceIds),
+					api.getUptimeForServices(serviceIds),
+				])
+			: [{}, {}];
 
-	return { user, services, checks, groups };
+	return { user, services, checks, groups, uptime, timezone };
 };
 
 export const actions: Actions = {

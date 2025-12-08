@@ -12,6 +12,7 @@ const { data }: { data: PageData } = $props();
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
 			<a href="/services" class="nav-link">services</a>
+			<a href="https://heliopolis.live/atums/status" target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
 		</nav>
 		<UserMenu user={data.user} />
 	</header>

@@ -2,10 +2,12 @@ import { clearSession, getSessionId } from "$lib/server";
 import * as api from "$lib/server/api";
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
+import { env } from "$env/dynamic/public";
 
 export const load: PageServerLoad = async ({ cookies, params }) => {
 	const groupName = decodeURIComponent(params.group);
 	const sessionId = getSessionId(cookies);
+	const timezone = env.PUBLIC_TIMEZONE || "UTC";
 
 	let services;
 	let user = null;
@@ -31,10 +33,13 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 	}
 
 	const serviceIds = filtered.map((s) => s.id);
-	const checks =
+	const [checks, uptime] =
 		serviceIds.length > 0
-			? await api.getLatestChecksForServices(serviceIds)
-			: {};
+			? await Promise.all([
+					api.getLatestChecksForServices(serviceIds),
+					api.getUptimeForServices(serviceIds),
+				])
+			: [{}, {}];
 
-	return { user, services: filtered, checks, groupName };
+	return { user, services: filtered, checks, groupName, uptime, timezone };
 };

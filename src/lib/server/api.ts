@@ -169,6 +169,18 @@ export async function getLatestChecksForServices(
 	return result.checks;
 }
 
+export async function getUptimeForServices(
+	serviceIds: string[],
+): Promise<Record<string, { uptimePercent: number; totalChecks: number }>> {
+	const result = await request<{
+		stats: Record<string, { uptimePercent: number; totalChecks: number }>;
+	}>("/checks/stats/batch", {
+		method: "POST",
+		body: JSON.stringify({ serviceIds }),
+	});
+	return result.stats;
+}
+
 export async function runCheck(serviceId: string): Promise<ServiceCheck> {
 	const result = await request<{ check: ServiceCheck }>(
 		`/checks/service/${serviceId}`,

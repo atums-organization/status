@@ -22,11 +22,21 @@ function formatTime(ms: number | null): string {
 }
 
 function formatDate(date: string): string {
-	return new Date(date).toLocaleString();
+	return new Date(date).toLocaleString(undefined, {
+		timeZone: data.timezone,
+		hour12: false,
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "2-digit",
+		minute: "2-digit",
+	});
 }
 
 function formatShortTime(date: string): string {
-	return new Date(date).toLocaleTimeString([], {
+	return new Date(date).toLocaleTimeString(undefined, {
+		timeZone: data.timezone,
+		hour12: false,
 		hour: "2-digit",
 		minute: "2-digit",
 	});
@@ -129,19 +139,27 @@ function formatGraphDate(date: string): string {
 		(now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24),
 	);
 
+	const timeOpts: Intl.DateTimeFormatOptions = {
+		timeZone: data.timezone,
+		hour12: false,
+		hour: "2-digit",
+		minute: "2-digit",
+	};
+
 	if (diffDays === 0) {
-		return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+		return d.toLocaleTimeString(undefined, timeOpts);
 	}
 	if (diffDays === 1) {
-		return (
-			"Yesterday " +
-			d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-		);
+		return "Yesterday " + d.toLocaleTimeString(undefined, timeOpts);
 	}
 	return (
-		d.toLocaleDateString([], { month: "short", day: "numeric" }) +
+		d.toLocaleDateString(undefined, {
+			timeZone: data.timezone,
+			month: "short",
+			day: "numeric",
+		}) +
 		" " +
-		d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+		d.toLocaleTimeString(undefined, timeOpts)
 	);
 }
 </script>
@@ -151,6 +169,7 @@ function formatGraphDate(date: string): string {
 		<h1><a href="/" class="brand-link"><span class="brand">atums</span>/status</a></h1>
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
+			<a href="https://heliopolis.live/atums/status" target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
 		</nav>
 		{#if data.user}
 			<UserMenu user={data.user} />

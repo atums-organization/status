@@ -198,6 +198,47 @@ export async function getLatestBatch(req: Request): Promise<Response> {
 	return Response.json({ checks });
 }
 
+export async function getStatsBatch(req: Request): Promise<Response> {
+	const body = await req.json();
+	const { serviceIds } = body;
+
+	if (!Array.isArray(serviceIds)) {
+		return Response.json(
+			{ error: "serviceIds array required" },
+			{ status: 400 },
+		);
+	}
+
+	if (serviceIds.length === 0) {
+		return Response.json({ stats: {} });
+	}
+
+	const stats: Record<string, { uptimePercent: number; totalChecks: number }> = {};
+
+	for (const serviceId of serviceIds) {
+		const rows = await sql`
+			SELECT
+				COUNT(*) as total_checks,
+				COUNT(*) FILTER (WHERE success = true) as successful_checks
+			FROM service_checks
+			WHERE service_id = ${serviceId}
+			AND checked_at > NOW() - INTERVAL '24 hours'
+		`;
+
+		const row = rows[0] || {};
+		const totalChecks = Number(row.total_checks) || 0;
+		const successfulChecks = Number(row.successful_checks) || 0;
+		const uptimePercent = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 100;
+
+		stats[serviceId] = {
+			uptimePercent: Math.round(uptimePercent * 100) / 100,
+			totalChecks,
+		};
+	}
+
+	return Response.json({ stats });
+}
+
 export async function runCheck(
 	req: Request,
 	url: URL,

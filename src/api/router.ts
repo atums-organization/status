@@ -81,6 +81,10 @@ const routes: Route[] = [
 		handlers: { POST: checks.getLatestBatch },
 	},
 	{
+		pattern: /^\/checks\/stats\/batch$/,
+		handlers: { POST: checks.getStatsBatch },
+	},
+	{
 		pattern: /^\/checker\/start\/([^/]+)$/,
 		handlers: { POST: checks.startChecker },
 	},

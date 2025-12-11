@@ -127,8 +127,134 @@
 	flex-shrink: 0;
 }
 
-.no-invites {
+.no-invites,
+.no-events {
 	color: var(--color-text-muted);
 	font-size: var(--text-sm);
 	margin: 0;
+}
+
+.event-form {
+	margin-bottom: var(--spacing-lg);
+}
+
+.event-form .form-row {
+	display: flex;
+	gap: var(--spacing-md);
+}
+
+.event-form .select-group {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.event-form .select-group label {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+	text-transform: lowercase;
+}
+
+.event-form .select-group select {
+	padding: var(--spacing-sm) var(--spacing-md);
+	border: 1px solid var(--color-border);
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	cursor: pointer;
+}
+
+.event-form .select-group select:focus {
+	outline: none;
+	border-color: var(--color-accent);
+}
+
+.events-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+}
+
+.event-item {
+	padding: var(--spacing-md);
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+}
+
+.event-item.resolved {
+	opacity: 0.6;
+}
+
+.event-item.event-incident {
+	border-left: 3px solid var(--color-error);
+}
+
+.event-item.event-maintenance {
+	border-left: 3px solid var(--color-warning);
+}
+
+.event-item.event-info {
+	border-left: 3px solid var(--color-info);
+}
+
+.event-item-header {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	margin-bottom: var(--spacing-xs);
+}
+
+.event-type {
+	font-size: var(--text-xs);
+	text-transform: lowercase;
+	font-weight: var(--font-medium);
+	color: var(--color-text-muted);
+}
+
+.event-status {
+	font-size: var(--text-xs);
+	padding: 2px 6px;
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	color: var(--color-text-secondary);
+}
+
+.event-group {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+	margin-left: auto;
+}
+
+.event-group.global {
+	color: var(--color-text-muted);
+	font-style: italic;
+}
+
+.event-title {
+	margin: 0 0 var(--spacing-xs);
+	font-size: var(--text-sm);
+	font-weight: var(--font-medium);
+	color: var(--color-text);
+}
+
+.event-description {
+	margin: 0 0 var(--spacing-xs);
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+}
+
+.event-date {
+	font-size: var(--text-xs);
+	color: var(--color-text-muted);
+}
+
+.event-actions {
+	display: flex;
+	gap: var(--spacing-sm);
+	margin-top: var(--spacing-sm);
+}
+
+.event-actions form {
+	display: contents;
 }

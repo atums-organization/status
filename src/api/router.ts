@@ -1,5 +1,6 @@
 import * as auth from "./routes/auth";
 import * as checks from "./routes/checks";
+import * as events from "./routes/events";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 
@@ -96,6 +97,26 @@ const routes: Route[] = [
 	{
 		pattern: /^\/checker\/stop\/([^/]+)$/,
 		handlers: { POST: checks.stopChecker },
+	},
+	{
+		pattern: /^\/events$/,
+		handlers: { GET: events.list, POST: events.create },
+	},
+	{
+		pattern: /^\/events\/active$/,
+		handlers: { GET: events.listActive },
+	},
+	{
+		pattern: /^\/events\/([^/]+)$/,
+		handlers: {
+			GET: events.get,
+			PUT: events.update,
+			DELETE: events.remove,
+		},
+	},
+	{
+		pattern: /^\/events\/([^/]+)\/resolve$/,
+		handlers: { POST: events.resolve },
 	},
 	{
 		pattern: /^\/invites\/user\/([^/]+)$/,

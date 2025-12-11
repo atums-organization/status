@@ -5,6 +5,7 @@ import {
 	type ServiceStats,
 	UserMenu,
 	formatDateTime,
+	formatDate as formatDateUtil,
 	formatShortTime as formatShortTimeUtil,
 	formatResponseTime,
 } from "$lib";
@@ -17,6 +18,7 @@ let selectedService = $state<Service | null>(null);
 let serviceChecks = $state<ServiceCheck[]>([]);
 let serviceStats = $state<ServiceStats | null>(null);
 let loading = $state(false);
+let showRecentEvents = $state(false);
 
 function formatTime(ms: number | null): string {
 	if (ms === null) return "-";
@@ -29,6 +31,18 @@ function formatDate(date: string): string {
 
 function formatShortTime(date: string): string {
 	return formatShortTimeUtil(date, data.timezone);
+}
+
+function formatEventDate(date: string): string {
+	return formatDateUtil(date);
+}
+
+function getEventTypeClass(type: string): string {
+	switch (type) {
+		case "incident": return "event-incident";
+		case "maintenance": return "event-maintenance";
+		default: return "event-info";
+	}
 }
 
 async function openServiceDetail(service: Service) {
@@ -168,10 +182,61 @@ function formatGraphDate(date: string): string {
 	</header>
 
 	<main class="main centered">
-		<div class="group-header">
-			<h2 class="group-title">{data.groupName}</h2>
-			<a href="/" class="back-link">view all</a>
+		<div class="page-header">
+			<h2 class="page-title">{data.groupName}</h2>
+			<div class="page-actions">
+				{#if data.recentEvents.length > 0}
+					<button
+						type="button"
+						class="btn sm"
+						class:active={showRecentEvents}
+						onclick={() => showRecentEvents = !showRecentEvents}
+					>
+						{showRecentEvents ? "hide" : "show"} events ({data.recentEvents.length})
+					</button>
+				{/if}
+				<a href="/" class="back-link">view all</a>
+			</div>
 		</div>
+
+		{#if data.activeEvents.length > 0}
+			<div class="active-events">
+				{#each data.activeEvents as event}
+					<div class="event-banner {getEventTypeClass(event.type)}">
+						<div class="event-header">
+							<span class="event-type">{event.type}</span>
+							<span class="event-status">{event.status}</span>
+						</div>
+						<h3 class="event-title">{event.title}</h3>
+						{#if event.description}
+							<p class="event-description">{event.description}</p>
+						{/if}
+						<span class="event-date">started {formatEventDate(event.startedAt)}</span>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		{#if showRecentEvents && data.recentEvents.length > 0}
+			<div class="recent-events">
+				<h3>recent events</h3>
+				<div class="events-list">
+					{#each data.recentEvents as event}
+						<div class="event-item {getEventTypeClass(event.type)}" class:resolved={event.status === "resolved"}>
+							<div class="event-item-header">
+								<span class="event-type">{event.type}</span>
+								<span class="event-status">{event.status}</span>
+								<span class="event-date">{formatEventDate(event.startedAt)}</span>
+							</div>
+							<h4 class="event-title">{event.title}</h4>
+							{#if event.description}
+								<p class="event-description">{event.description}</p>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<div class="services-list">
 			{#each data.services as service}

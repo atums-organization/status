@@ -229,13 +229,33 @@ export async function updatePositions(req: Request): Promise<Response> {
 }
 
 export async function listGroups(): Promise<Response> {
-	const rows = await sql`
+	const dbGroups = await sql`
 		SELECT id, name, position, created_at
 		FROM groups
 		ORDER BY position ASC, name ASC
 	`;
 
-	return Response.json({ groups: rows.map(rowToGroup) });
+	const serviceGroups = await sql`
+		SELECT DISTINCT group_name
+		FROM services
+		WHERE group_name IS NOT NULL
+	`;
+
+	const dbGroupNames = new Set(dbGroups.map((r: Record<string, unknown>) => r.name));
+	const allGroups = [...dbGroups.map(rowToGroup)];
+
+	for (const row of serviceGroups) {
+		if (!dbGroupNames.has(row.group_name as string)) {
+			allGroups.push({
+				id: `service-group-${row.group_name}`,
+				name: row.group_name as string,
+				position: allGroups.length,
+				createdAt: new Date().toISOString(),
+			});
+		}
+	}
+
+	return Response.json({ groups: allGroups });
 }
 
 export async function upsertGroup(req: Request): Promise<Response> {

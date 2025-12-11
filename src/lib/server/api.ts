@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/private";
-import type { Group, Service, ServiceCheck, ServiceStats, User } from "../../types";
+import type { Group, Service, ServiceCheck, ServiceStats, StatusEvent, User } from "../../types";
 
 const API_URL = env.API_URL || "http://localhost:3001";
 
@@ -288,4 +288,73 @@ export async function useInvite(inviteId: string, userId: string): Promise<void>
 		method: "POST",
 		body: JSON.stringify({ userId }),
 	});
+}
+
+export async function getEvents(options?: {
+	group?: string;
+	status?: string;
+	limit?: number;
+}): Promise<StatusEvent[]> {
+	const params = new URLSearchParams();
+	if (options?.group) params.set("group", options.group);
+	if (options?.status) params.set("status", options.status);
+	if (options?.limit) params.set("limit", options.limit.toString());
+	const query = params.toString() ? `?${params.toString()}` : "";
+	const result = await request<{ events: StatusEvent[] }>(`/events${query}`);
+	return result.events;
+}
+
+export async function getActiveEvents(group?: string): Promise<StatusEvent[]> {
+	const query = group ? `?group=${encodeURIComponent(group)}` : "";
+	const result = await request<{ events: StatusEvent[] }>(`/events/active${query}`);
+	return result.events;
+}
+
+export async function getEvent(id: string): Promise<StatusEvent | null> {
+	try {
+		const result = await request<{ event: StatusEvent }>(`/events/${id}`);
+		return result.event;
+	} catch {
+		return null;
+	}
+}
+
+export async function createEvent(data: {
+	title: string;
+	description?: string;
+	type?: string;
+	status?: string;
+	groupName?: string | null;
+	startedAt?: string;
+}): Promise<StatusEvent> {
+	const result = await request<{ event: StatusEvent }>("/events", {
+		method: "POST",
+		body: JSON.stringify(data),
+	});
+	return result.event;
+}
+
+export async function updateEvent(
+	id: string,
+	data: {
+		title?: string;
+		description?: string;
+		type?: string;
+		status?: string;
+		groupName?: string | null;
+		resolvedAt?: string | null;
+	},
+): Promise<void> {
+	await request(`/events/${id}`, {
+		method: "PUT",
+		body: JSON.stringify(data),
+	});
+}
+
+export async function resolveEvent(id: string): Promise<void> {
+	await request(`/events/${id}/resolve`, { method: "POST" });
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+	await request(`/events/${id}`, { method: "DELETE" });
 }

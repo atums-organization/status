@@ -1,4 +1,6 @@
 export type {
+	EventStatus,
+	EventType,
 	Group,
 	Notification,
 	NotificationType,
@@ -6,6 +8,7 @@ export type {
 	ServiceCheck,
 	ServiceStats,
 	SqlMigration,
+	StatusEvent,
 	User,
 } from "../types";
 export { Notifications, UserMenu } from "./components";

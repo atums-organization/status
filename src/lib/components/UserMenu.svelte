@@ -1,16 +1,16 @@
 <script lang="ts">
-import type { User } from "$lib";
+	import type { User } from "$lib";
 
-const { user }: { user: User } = $props();
-let open = $state(false);
+	const { user }: { user: User } = $props();
+	let open = $state(false);
 
-function toggle() {
-	open = !open;
-}
+	function toggle() {
+		open = !open;
+	}
 
-function close() {
-	open = false;
-}
+	function close() {
+		open = false;
+	}
 </script>
 
 <svelte:window onclick={close} />
@@ -50,7 +50,11 @@ function close() {
 			<a href="/settings" class="dropdown-item">settings</a>
 			<div class="dropdown-divider"></div>
 			<form method="POST" action="/settings?/logout">
-				<button type="submit" class="dropdown-item logout" onclick={(e) => e.stopPropagation()}>logout</button>
+				<button
+					type="submit"
+					class="dropdown-item logout"
+					onclick={(e) => e.stopPropagation()}>logout</button
+				>
 			</form>
 		</div>
 	{/if}

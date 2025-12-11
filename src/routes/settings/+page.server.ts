@@ -16,15 +16,18 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	}
 
 	let invites: api.Invite[] = [];
+	let events: Awaited<ReturnType<typeof api.getEvents>> = [];
+	let groups: Awaited<ReturnType<typeof api.getGroups>> = [];
+
 	if (user.role === "admin") {
-		try {
-			invites = await api.getInvites(user.id);
-		} catch {
-			invites = [];
-		}
+		[invites, events, groups] = await Promise.all([
+			api.getInvites(user.id).catch(() => []),
+			api.getEvents({ limit: 20 }).catch(() => []),
+			api.getGroups().catch(() => []),
+		]);
 	}
 
-	return { user, invites };
+	return { user, invites, events, groups };
 };
 
 export const actions: Actions = {
@@ -113,5 +116,99 @@ export const actions: Actions = {
 	logout: async ({ cookies }) => {
 		clearSession(cookies);
 		redirect(302, "/login");
+	},
+
+	createEvent: async ({ request, cookies }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { eventError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const title = data.get("title")?.toString().trim();
+		const description = data.get("description")?.toString().trim() || undefined;
+		const type = data.get("type")?.toString() || "incident";
+		const status = data.get("status")?.toString() || "ongoing";
+		const groupName = data.get("groupName")?.toString() || null;
+
+		if (!title) {
+			return fail(400, { eventError: "title is required" });
+		}
+
+		try {
+			await api.createEvent({
+				title,
+				description,
+				type,
+				status,
+				groupName: groupName || null,
+			});
+			return { eventSuccess: "event created" };
+		} catch (err) {
+			return fail(400, {
+				eventError: err instanceof Error ? err.message : "failed to create event",
+			});
+		}
+	},
+
+	resolveEvent: async ({ request, cookies }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { eventError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const eventId = data.get("eventId")?.toString();
+
+		if (!eventId) {
+			return fail(400, { eventError: "event id required" });
+		}
+
+		try {
+			await api.resolveEvent(eventId);
+			return { eventSuccess: "event resolved" };
+		} catch (err) {
+			return fail(400, {
+				eventError: err instanceof Error ? err.message : "failed to resolve event",
+			});
+		}
+	},
+
+	deleteEvent: async ({ request, cookies }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { eventError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const eventId = data.get("eventId")?.toString();
+
+		if (!eventId) {
+			return fail(400, { eventError: "event id required" });
+		}
+
+		try {
+			await api.deleteEvent(eventId);
+			return { eventSuccess: "event deleted" };
+		} catch (err) {
+			return fail(400, {
+				eventError: err instanceof Error ? err.message : "failed to delete event",
+			});
+		}
 	},
 };

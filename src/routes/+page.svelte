@@ -26,8 +26,6 @@
 	let loading = $state(false);
 
 	let draggedService = $state<Service | null>(null);
-	let draggedGroup = $state<string | null>(null);
-	let dragOverGroup = $state<string | null>(null);
 
 	function handleFormResult() {
 		return async ({
@@ -210,7 +208,6 @@
 
 	function handleServiceDragEnd() {
 		draggedService = null;
-		dragOverGroup = null;
 	}
 
 	async function handleServiceDrop(
@@ -251,47 +248,38 @@
 		}));
 
 		draggedService = null;
-		dragOverGroup = null;
 
 		if (positions.length > 0) {
 			await savePositions(positions);
 		}
 	}
 
-	function handleGroupDragStart(e: DragEvent, groupName: string) {
-		if (!editMode) return;
-		draggedGroup = groupName;
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = "move";
-			e.dataTransfer.setData("text/plain", groupName);
-		}
-	}
-
-	function handleGroupDragEnd() {
-		draggedGroup = null;
-		dragOverGroup = null;
-	}
-
-	async function handleGroupDrop(e: DragEvent, targetGroupName: string) {
-		e.preventDefault();
-		if (!draggedGroup || draggedGroup === targetGroupName) return;
-
+	async function moveGroupUp(groupName: string) {
 		const groupList = [...sortedGroups];
-		const fromIndex = groupList.findIndex((g) => g.name === draggedGroup);
-		const toIndex = groupList.findIndex((g) => g.name === targetGroupName);
+		const index = groupList.findIndex((g) => g.name === groupName);
+		if (index <= 0) return;
 
-		if (fromIndex === -1 || toIndex === -1) return;
-
-		const [moved] = groupList.splice(fromIndex, 1);
-		groupList.splice(toIndex, 0, moved);
+		[groupList[index - 1], groupList[index]] = [groupList[index], groupList[index - 1]];
 
 		const positions = groupList.map((g, i) => ({
 			name: g.name,
 			position: i,
 		}));
 
-		draggedGroup = null;
-		dragOverGroup = null;
+		await saveGroupPositions(positions);
+	}
+
+	async function moveGroupDown(groupName: string) {
+		const groupList = [...sortedGroups];
+		const index = groupList.findIndex((g) => g.name === groupName);
+		if (index === -1 || index >= groupList.length - 1) return;
+
+		[groupList[index], groupList[index + 1]] = [groupList[index + 1], groupList[index]];
+
+		const positions = groupList.map((g, i) => ({
+			name: g.name,
+			position: i,
+		}));
 
 		await saveGroupPositions(positions);
 	}
@@ -484,54 +472,37 @@
 					>
 				</div>
 			{/if}
-			{#each sortedGroups as group (group.name)}
+			{#each sortedGroups as group, groupIndex (group.name)}
 				{@const services = groupedServices.groups[group.name] || []}
 				{#if services.length > 0 || editMode}
-					<div
-						class="service-group"
-						class:dragging={draggedGroup === group.name}
-						class:drag-over={dragOverGroup === group.name &&
-							draggedGroup &&
-							draggedGroup !== group.name}
-					>
-						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-						<div
-							class="group-header"
-							class:draggable={editMode}
-							draggable={editMode}
-							ondragstart={(e) =>
-								handleGroupDragStart(e, group.name)}
-							ondragend={handleGroupDragEnd}
-							ondragover={(e) => {
-								if (
-									draggedGroup &&
-									draggedGroup !== group.name
-								) {
-									e.preventDefault();
-									dragOverGroup = group.name;
-								}
-							}}
-							ondragleave={() => (dragOverGroup = null)}
-							ondrop={(e) => handleGroupDrop(e, group.name)}
-							role={editMode ? "button" : undefined}
-							tabindex={editMode ? 0 : -1}
-						>
+					<div class="service-group">
+						<div class="group-header">
+							{#if editMode}
+								<div class="group-reorder">
+									<button
+										type="button"
+										class="reorder-btn"
+										disabled={groupIndex === 0}
+										onclick={() => moveGroupUp(group.name)}
+										title="Move up"
+									>&#9650;</button>
+									<button
+										type="button"
+										class="reorder-btn"
+										disabled={groupIndex === sortedGroups.length - 1}
+										onclick={() => moveGroupDown(group.name)}
+										title="Move down"
+									>&#9660;</button>
+								</div>
+							{/if}
 							<h2 class="group-title">{group.name}</h2>
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
 								<span
 									class="group-uptime"
-									class:is-success={groupUptime[group.name]! >=
-										90}
-									class:is-warning={groupUptime[group.name]! >=
-										75 && groupUptime[group.name]! < 90}
+									class:is-success={groupUptime[group.name]! >= 90}
+									class:is-warning={groupUptime[group.name]! >= 75 && groupUptime[group.name]! < 90}
 									class:is-error={groupUptime[group.name]! < 75}
-									>{groupUptime[group.name]?.toFixed(
-										2,
-									)}%</span
-								>
-							{/if}
-							{#if editMode}
-								<span class="drag-handle">drag</span>
+								>{groupUptime[group.name]?.toFixed(2)}%</span>
 							{/if}
 						</div>
 						<div
@@ -539,7 +510,6 @@
 							ondragover={(e) => {
 								if (draggedService) {
 									e.preventDefault();
-									dragOverGroup = group.name;
 								}
 							}}
 							ondrop={(e) =>
@@ -721,7 +691,6 @@
 					ondragover={(e) => {
 						if (draggedService) {
 							e.preventDefault();
-							dragOverGroup = null;
 						}
 					}}
 					ondrop={(e) => handleServiceDrop(e, null, null)}

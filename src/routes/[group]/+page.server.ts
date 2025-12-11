@@ -33,13 +33,15 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 	}
 
 	const serviceIds = filtered.map((s) => s.id);
-	const [checks, uptime] =
+	const [checks, uptime, activeEvents, recentEvents] =
 		serviceIds.length > 0
 			? await Promise.all([
 					api.getLatestChecksForServices(serviceIds),
 					api.getUptimeForServices(serviceIds),
+					api.getActiveEvents(groupName),
+					api.getEvents({ group: groupName, limit: 10 }),
 				])
-			: [{}, {}];
+			: [{}, {}, [], []];
 
-	return { user, services: filtered, checks, groupName, uptime, timezone };
+	return { user, services: filtered, checks, groupName, uptime, timezone, activeEvents, recentEvents };
 };

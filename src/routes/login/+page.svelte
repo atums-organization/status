@@ -1,10 +1,10 @@
 <script lang="ts">
-import type { ActionData, PageData } from "./$types";
-import "./page.css";
+	import type { ActionData, PageData } from "./$types";
+	import "./page.css";
 
-const { data, form }: { data: PageData; form: ActionData } = $props();
+	const { data, form }: { data: PageData; form: ActionData } = $props();
 
-const page = $derived((form?.page as "login" | "register") ?? data.page);
+	const page = $derived((form?.page as "login" | "register") ?? data.page);
 </script>
 
 <div class="login-container">
@@ -14,7 +14,9 @@ const page = $derived((form?.page as "login" | "register") ?? data.page);
 		{#if !data.isFirstUser}
 			<div class="tabs">
 				<a href="?page=login" class:active={page === "login"}>Login</a>
-				<a href="?page=register" class:active={page === "register"}>Register</a>
+				<a href="?page=register" class:active={page === "register"}
+					>Register</a
+				>
 			</div>
 		{/if}
 
@@ -59,7 +61,7 @@ const page = $derived((form?.page as "login" | "register") ?? data.page);
 							placeholder=" "
 							required
 							autocomplete="off"
-							style="text-transform: uppercase; letter-spacing: 0.1em;"
+							style="text-transform: lowercase; letter-spacing: 0.1em;"
 						/>
 						<label for="inviteCode">Invite Code</label>
 					</div>

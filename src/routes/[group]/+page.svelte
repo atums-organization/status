@@ -4,6 +4,9 @@ import {
 	type ServiceCheck,
 	type ServiceStats,
 	UserMenu,
+	formatDateTime,
+	formatShortTime as formatShortTimeUtil,
+	formatResponseTime,
 } from "$lib";
 import type { PageData } from "./$types";
 import "./page.css";
@@ -17,29 +20,15 @@ let loading = $state(false);
 
 function formatTime(ms: number | null): string {
 	if (ms === null) return "-";
-	if (ms < 1000) return `${ms}ms`;
-	return `${(ms / 1000).toFixed(2)}s`;
+	return formatResponseTime(ms);
 }
 
 function formatDate(date: string): string {
-	return new Date(date).toLocaleString(undefined, {
-		timeZone: data.timezone,
-		hour12: false,
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+	return formatDateTime(date, data.timezone);
 }
 
 function formatShortTime(date: string): string {
-	return new Date(date).toLocaleTimeString(undefined, {
-		timeZone: data.timezone,
-		hour12: false,
-		hour: "2-digit",
-		minute: "2-digit",
-	});
+	return formatShortTimeUtil(date, data.timezone);
 }
 
 async function openServiceDetail(service: Service) {

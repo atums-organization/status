@@ -1,5 +1,6 @@
 import * as auth from "./routes/auth";
 import * as checks from "./routes/checks";
+import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 
 type Handler = (
@@ -27,6 +28,10 @@ const routes: Route[] = [
 	{
 		pattern: /^\/auth\/user\/([^/]+)$/,
 		handlers: { GET: auth.getUser },
+	},
+	{
+		pattern: /^\/auth\/user\/([^/]+)\/password$/,
+		handlers: { PUT: auth.changePassword },
 	},
 	{
 		pattern: /^\/auth\/first-user$/,
@@ -91,6 +96,22 @@ const routes: Route[] = [
 	{
 		pattern: /^\/checker\/stop\/([^/]+)$/,
 		handlers: { POST: checks.stopChecker },
+	},
+	{
+		pattern: /^\/invites\/user\/([^/]+)$/,
+		handlers: { GET: invites.list, POST: invites.create },
+	},
+	{
+		pattern: /^\/invites\/([^/]+)$/,
+		handlers: { DELETE: invites.remove },
+	},
+	{
+		pattern: /^\/invites\/validate$/,
+		handlers: { POST: invites.validate },
+	},
+	{
+		pattern: /^\/invites\/([^/]+)\/use$/,
+		handlers: { POST: invites.markUsed },
 	},
 ];
 

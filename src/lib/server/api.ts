@@ -56,6 +56,17 @@ export async function getUserById(id: string): Promise<User | null> {
 	}
 }
 
+export async function changePassword(
+	userId: string,
+	currentPassword: string,
+	newPassword: string,
+): Promise<void> {
+	await request(`/auth/user/${userId}/password`, {
+		method: "PUT",
+		body: JSON.stringify({ currentPassword, newPassword }),
+	});
+}
+
 export async function getServices(): Promise<Service[]> {
 	const result = await request<{ services: Service[] }>("/services");
 	return result.services;
@@ -225,5 +236,56 @@ export async function updateGroupPositions(
 	await request("/groups/positions", {
 		method: "PUT",
 		body: JSON.stringify({ positions }),
+	});
+}
+
+export interface Invite {
+	id: string;
+	code: string;
+	createdBy: string;
+	usedBy: string | null;
+	usedByUsername: string | null;
+	usedAt: string | null;
+	expiresAt: string | null;
+	createdAt: string;
+}
+
+export async function getInvites(userId: string): Promise<Invite[]> {
+	const result = await request<{ invites: Invite[] }>(`/invites/user/${userId}`);
+	return result.invites;
+}
+
+export async function createInvite(
+	userId: string,
+	expiresInDays?: number,
+): Promise<Invite> {
+	const result = await request<{ invite: Invite }>(`/invites/user/${userId}`, {
+		method: "POST",
+		body: JSON.stringify({ expiresInDays }),
+	});
+	return result.invite;
+}
+
+export async function deleteInvite(inviteId: string): Promise<void> {
+	await request(`/invites/${inviteId}`, { method: "DELETE" });
+}
+
+export async function validateInvite(
+	code: string,
+): Promise<{ valid: boolean; inviteId?: string; error?: string }> {
+	const result = await request<{ valid: boolean; inviteId?: string; error?: string }>(
+		"/invites/validate",
+		{
+			method: "POST",
+			body: JSON.stringify({ code }),
+		},
+	);
+	return result;
+}
+
+export async function useInvite(inviteId: string, userId: string): Promise<void> {
+	await request(`/invites/${inviteId}/use`, {
+		method: "POST",
+		body: JSON.stringify({ userId }),
 	});
 }

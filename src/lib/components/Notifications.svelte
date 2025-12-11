@@ -18,30 +18,25 @@ function getIcon(type: NotificationType): string {
 
 <div class="notifications">
 	{#each notifications.list as notification (notification.id)}
-		<div class="notification {notification.type}">
+		<button class="notification {notification.type}" onclick={() => notifications.remove(notification.id)}>
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 				<path stroke-linecap="round" stroke-linejoin="round" d={getIcon(notification.type)} />
 			</svg>
 			<span class="message">{notification.message}</span>
-			<button class="close" aria-label="Close notification" onclick={() => notifications.remove(notification.id)}>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-				</svg>
-			</button>
-		</div>
+		</button>
 	{/each}
 </div>
 
 <style>
 	.notifications {
 		position: fixed;
-		top: var(--spacing-md);
-		right: var(--spacing-md);
+		bottom: var(--spacing-lg);
+		right: var(--spacing-lg);
 		z-index: 1000;
 		display: flex;
 		flex-direction: column;
 		gap: var(--spacing-sm);
-		max-width: 400px;
+		max-width: 360px;
 	}
 
 	.notification {
@@ -49,73 +44,56 @@ function getIcon(type: NotificationType): string {
 		align-items: center;
 		gap: var(--spacing-sm);
 		padding: var(--spacing-sm) var(--spacing-md);
-		border-radius: var(--radius-md);
-		border: 1px solid;
-		box-shadow: var(--shadow-md);
-		animation: slideIn 0.2s ease;
+		background: var(--color-bg-elevated);
+		border: 1px solid var(--color-border);
+		animation: slideUp 0.2s ease;
+		cursor: pointer;
+		text-align: left;
+		width: 100%;
+		font-family: inherit;
+		transition: border-color var(--transition-fast);
 	}
 
-	@keyframes slideIn {
+	.notification:hover {
+		border-color: var(--color-border-hover);
+	}
+
+	@keyframes slideUp {
 		from {
 			opacity: 0;
-			transform: translateX(100%);
+			transform: translateY(100%);
 		}
 		to {
 			opacity: 1;
-			transform: translateX(0);
+			transform: translateY(0);
 		}
 	}
 
 	.notification svg {
-		width: 20px;
-		height: 20px;
+		width: 16px;
+		height: 16px;
 		flex-shrink: 0;
 	}
 
 	.message {
 		flex: 1;
 		font-size: var(--text-sm);
+		color: var(--color-text);
 	}
 
-	.close {
-		background: none;
-		border: none;
-		padding: var(--spacing-xs);
-		color: inherit;
-		opacity: 0.6;
-		transition: opacity var(--transition-fast);
-	}
-
-	.close:hover {
-		opacity: 1;
-	}
-
-	.close svg {
-		width: 16px;
-		height: 16px;
-	}
-
-	.success {
-		background: var(--color-success-bg);
-		border-color: var(--color-success-border);
+	.success svg {
 		color: var(--color-success);
 	}
 
-	.error {
-		background: var(--color-error-bg);
-		border-color: var(--color-error-border);
+	.error svg {
 		color: var(--color-error);
 	}
 
-	.warning {
-		background: var(--color-warning-bg);
-		border-color: var(--color-warning-border);
+	.warning svg {
 		color: var(--color-warning);
 	}
 
-	.info {
-		background: var(--color-info-bg);
-		border-color: var(--color-info-border);
+	.info svg {
 		color: var(--color-info);
 	}
 </style>

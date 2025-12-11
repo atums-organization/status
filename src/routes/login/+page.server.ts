@@ -50,6 +50,7 @@ export const actions: Actions = {
 		const email = data.get("email")?.toString().trim();
 		const password = data.get("password")?.toString();
 		const confirmPassword = data.get("confirmPassword")?.toString();
+		const inviteCode = data.get("inviteCode")?.toString().trim().toUpperCase();
 
 		if (!username || !email || !password || !confirmPassword) {
 			return fail(400, { error: "All fields are required", page: "register" });
@@ -66,8 +67,31 @@ export const actions: Actions = {
 			});
 		}
 
+		const isFirstUser = await api.isFirstUser();
+		let inviteId: string | undefined;
+
+		if (!isFirstUser) {
+			if (!inviteCode) {
+				return fail(400, { error: "Invite code is required", page: "register" });
+			}
+
+			const validation = await api.validateInvite(inviteCode);
+			if (!validation.valid) {
+				return fail(400, {
+					error: validation.error || "Invalid invite code",
+					page: "register",
+				});
+			}
+			inviteId = validation.inviteId;
+		}
+
 		try {
 			const user = await api.register(username, email, password);
+
+			if (inviteId) {
+				await api.useInvite(inviteId, user.id);
+			}
+
 			setSession(cookies, user.id);
 			redirect(302, "/");
 		} catch (err) {

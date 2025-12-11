@@ -50,6 +50,20 @@ const page = $derived((form?.page as "login" | "register") ?? data.page);
 			</form>
 		{:else}
 			<form method="POST" action="?/register">
+				{#if !data.isFirstUser}
+					<div class="field">
+						<input
+							type="text"
+							id="inviteCode"
+							name="inviteCode"
+							placeholder=" "
+							required
+							autocomplete="off"
+							style="text-transform: uppercase; letter-spacing: 0.1em;"
+						/>
+						<label for="inviteCode">Invite Code</label>
+					</div>
+				{/if}
 				<div class="field">
 					<input
 						type="text"
@@ -106,7 +120,7 @@ const page = $derived((form?.page as "login" | "register") ?? data.page);
 
 		{#if !data.isFirstUser && page === "login"}
 			<p class="invite-note">
-				Need an account? Contact an administrator for an invite.
+				Need an account? Ask an admin for an invite code.
 			</p>
 		{/if}
 	</div>

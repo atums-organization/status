@@ -47,10 +47,10 @@ function close() {
 				<span class="dropdown-role">{user.role}</span>
 			</div>
 			<div class="dropdown-divider"></div>
-			<a href="/settings" class="dropdown-item">Settings</a>
+			<a href="/settings" class="dropdown-item">settings</a>
 			<div class="dropdown-divider"></div>
-			<form method="POST" action="/logout">
-				<button type="submit" class="dropdown-item logout" onclick={(e) => e.stopPropagation()}>Logout</button>
+			<form method="POST" action="/settings?/logout">
+				<button type="submit" class="dropdown-item logout" onclick={(e) => e.stopPropagation()}>logout</button>
 			</form>
 		</div>
 	{/if}

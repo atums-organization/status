@@ -137,3 +137,44 @@ export async function getUser(
 		},
 	});
 }
+
+export async function changePassword(
+	req: Request,
+	url: URL,
+	params?: Record<string, string>,
+): Promise<Response> {
+	const id = params?.id;
+	if (!id) {
+		return Response.json({ error: "User ID required" }, { status: 400 });
+	}
+
+	const body = await req.json();
+	const { currentPassword, newPassword } = body;
+
+	if (!currentPassword || !newPassword) {
+		return Response.json(
+			{ error: "Current and new password required" },
+			{ status: 400 },
+		);
+	}
+
+	const rows = await sql`
+		SELECT password_hash FROM users WHERE id = ${id}
+	`;
+
+	if (rows.length === 0) {
+		return Response.json({ error: "User not found" }, { status: 404 });
+	}
+
+	const valid = await verifyPassword(currentPassword, rows[0].password_hash);
+	if (!valid) {
+		return Response.json({ error: "Current password is incorrect" }, { status: 401 });
+	}
+
+	const newHash = await hashPassword(newPassword);
+	await sql`
+		UPDATE users SET password_hash = ${newHash} WHERE id = ${id}
+	`;
+
+	return Response.json({ success: true });
+}

@@ -181,32 +181,35 @@
 }
 
 .overall-uptime .uptime-value {
-	font-size: var(--text-xl);
+	font-size: var(--text-xl) !important;
 	font-weight: var(--font-semibold);
+	pointer-events: none;
 }
 
-.uptime-value.success,
-.group-uptime.success,
-.service-uptime.success {
-	color: var(--color-success);
+.uptime-value.is-success,
+.group-uptime.is-success,
+.service-uptime.is-success,
+.stat-value.is-success {
+	color: var(--color-success) !important;
 }
 
-.uptime-value.warning,
-.group-uptime.warning,
-.service-uptime.warning {
-	color: var(--color-warning, #f59e0b);
+.uptime-value.is-warning,
+.group-uptime.is-warning,
+.service-uptime.is-warning {
+	color: var(--color-warning, #f59e0b) !important;
 }
 
-.uptime-value.error,
-.group-uptime.error,
-.service-uptime.error {
-	color: var(--color-error);
+.uptime-value.is-error,
+.group-uptime.is-error,
+.service-uptime.is-error {
+	color: var(--color-error) !important;
 }
 
 .group-uptime {
-	font-size: var(--text-sm);
+	font-size: var(--text-sm) !important;
 	font-weight: var(--font-medium);
 	margin-left: auto;
+	pointer-events: none;
 }
 
 .service-status-area {
@@ -216,14 +219,21 @@
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-sm);
+	isolation: isolate;
+	contain: layout style;
 }
 
 .service-status-area .service-status {
 	position: static;
+	width: 12px !important;
+	height: 12px !important;
+	flex-shrink: 0;
 }
 
 .service-uptime {
-	font-size: var(--text-xs);
+	font-size: var(--text-xs) !important;
 	font-weight: var(--font-medium);
 	white-space: nowrap;
+	pointer-events: none;
 }
+

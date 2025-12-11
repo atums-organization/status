@@ -19,7 +19,8 @@
 	color: var(--color-text);
 }
 
-.stat-value.success {
+.stat-value.success,
+.stat-value.is-success {
 	color: var(--color-success);
 }
 

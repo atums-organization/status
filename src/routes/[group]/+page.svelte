@@ -283,7 +283,7 @@ function formatGraphDate(date: string): string {
 					{#if serviceStats}
 						<div class="stats-grid">
 							<div class="stat">
-								<span class="stat-value" class:success={serviceStats.uptimePercent >= 99}>{serviceStats.uptimePercent.toFixed(2)}%</span>
+								<span class="stat-value" class:is-success={serviceStats.uptimePercent >= 90}>{serviceStats.uptimePercent.toFixed(2)}%</span>
 								<span class="stat-label">uptime (24h)</span>
 							</div>
 							<div class="stat">

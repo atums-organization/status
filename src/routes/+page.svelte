@@ -487,10 +487,10 @@
 					<span class="uptime-label">overall uptime</span>
 					<span
 						class="uptime-value"
-						class:success={overallUptime >= 99}
-						class:warning={overallUptime >= 95 &&
-							overallUptime < 99}
-						class:error={overallUptime < 95}
+						class:is-success={overallUptime >= 90}
+						class:is-warning={overallUptime >= 75 &&
+							overallUptime < 90}
+						class:is-error={overallUptime < 75}
 						>{overallUptime.toFixed(2)}%</span
 					>
 				</div>
@@ -531,11 +531,11 @@
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
 								<span
 									class="group-uptime"
-									class:success={groupUptime[group.name]! >=
-										99}
-									class:warning={groupUptime[group.name]! >=
-										95 && groupUptime[group.name]! < 99}
-									class:error={groupUptime[group.name]! < 95}
+									class:is-success={groupUptime[group.name]! >=
+										90}
+									class:is-warning={groupUptime[group.name]! >=
+										75 && groupUptime[group.name]! < 90}
+									class:is-error={groupUptime[group.name]! < 75}
 									>{groupUptime[group.name]?.toFixed(
 										2,
 									)}%</span
@@ -593,14 +593,14 @@
 										{#if serviceUptime && serviceUptime.totalChecks > 0}
 											<span
 												class="service-uptime"
-												class:success={serviceUptime.uptimePercent >=
-													99}
-												class:warning={serviceUptime.uptimePercent >=
-													95 &&
+												class:is-success={serviceUptime.uptimePercent >=
+													90}
+												class:is-warning={serviceUptime.uptimePercent >=
+													75 &&
 													serviceUptime.uptimePercent <
-														99}
-												class:error={serviceUptime.uptimePercent <
-													95}
+														90}
+												class:is-error={serviceUptime.uptimePercent <
+													75}
 												>{serviceUptime.uptimePercent.toFixed(
 													1,
 												)}%</span
@@ -766,13 +766,13 @@
 								{#if serviceUptime && serviceUptime.totalChecks > 0}
 									<span
 										class="service-uptime"
-										class:success={serviceUptime.uptimePercent >=
-											99}
-										class:warning={serviceUptime.uptimePercent >=
-											95 &&
-											serviceUptime.uptimePercent < 99}
-										class:error={serviceUptime.uptimePercent <
-											95}
+										class:is-success={serviceUptime.uptimePercent >=
+											90}
+										class:is-warning={serviceUptime.uptimePercent >=
+											75 &&
+											serviceUptime.uptimePercent < 90}
+										class:is-error={serviceUptime.uptimePercent <
+											75}
 										>{serviceUptime.uptimePercent.toFixed(
 											1,
 										)}%</span
@@ -933,8 +933,8 @@
 							<div class="stat">
 								<span
 									class="stat-value"
-									class:success={serviceStats.uptimePercent >=
-										99}
+									class:is-success={serviceStats.uptimePercent >=
+										90}
 									>{serviceStats.uptimePercent.toFixed(
 										2,
 									)}%</span

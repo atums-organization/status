@@ -127,7 +127,7 @@
 	.dropdown-role {
 		font-size: var(--text-xs);
 		color: var(--color-text-muted);
-		text-transform: capitalize;
+		text-transform: lowercase;
 	}
 
 	.dropdown-divider {

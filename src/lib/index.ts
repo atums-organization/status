@@ -1,7 +1,9 @@
 export type {
+	AuditLog,
 	EventStatus,
 	EventType,
 	Group,
+	Invite,
 	Notification,
 	NotificationType,
 	Service,

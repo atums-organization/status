@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 					api.getActiveEvents(groupName),
 					api.getEvents({ group: groupName, limit: 10 }),
 				])
-			: [{}, {}, [], []];
+			: [{} as Record<string, import("$lib").ServiceCheck | null>, {} as Record<string, { uptimePercent: number; totalChecks: number }>, [], []];
 
 	return { user, services: filtered, checks, groupName, uptime, timezone, discordUrl, activeEvents, recentEvents };
 };

@@ -60,7 +60,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 };
 
 export const actions: Actions = {
-	delete: async ({ cookies, request }) => {
+	delete: async ({ cookies, request, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
 
@@ -77,6 +77,7 @@ export const actions: Actions = {
 
 		await api.stopChecker(serviceId);
 		await api.deleteService(serviceId);
+		await api.auditLog(user.id, "delete", "service", serviceId, null, getClientAddress());
 
 		return { success: true };
 	},
@@ -100,7 +101,7 @@ export const actions: Actions = {
 		return { success: true, check };
 	},
 
-	edit: async ({ cookies, request }) => {
+	edit: async ({ cookies, request, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { editError: "Unauthorized" });
 
@@ -158,6 +159,7 @@ export const actions: Actions = {
 			isPublic,
 			groupName,
 		});
+		await api.auditLog(user.id, "update", "service", serviceId, { name, url, enabled, isPublic }, getClientAddress());
 
 		if (enabled) {
 			await api.startChecker(serviceId);
@@ -166,7 +168,7 @@ export const actions: Actions = {
 		return { success: true, edited: true };
 	},
 
-	create: async ({ cookies, request }) => {
+	create: async ({ cookies, request, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { createError: "Unauthorized" });
 
@@ -212,6 +214,7 @@ export const actions: Actions = {
 				isPublic,
 				groupName,
 			});
+			await api.auditLog(user.id, "create", "service", service.id, { name, url, enabled, isPublic }, getClientAddress());
 
 			if (enabled) {
 				await api.startChecker(service.id);

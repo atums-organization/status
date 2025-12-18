@@ -79,4 +79,29 @@ export interface Notification {
 	id: string;
 	type: NotificationType;
 	message: string;
+	duration?: number;
+}
+
+export interface AuditLog {
+	id: string;
+	userId: string;
+	action: string;
+	entityType: string;
+	entityId: string | null;
+	details: Record<string, unknown> | null;
+	ipAddress: string | null;
+	createdAt: string;
+	userName?: string;
+	userEmail?: string;
+}
+
+export interface Invite {
+	id: string;
+	code: string;
+	createdBy: string;
+	usedBy: string | null;
+	usedByUsername: string | null;
+	usedAt: string | null;
+	expiresAt: string | null;
+	createdAt: string;
 }

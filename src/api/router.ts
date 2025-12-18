@@ -1,3 +1,4 @@
+import * as audit from "./routes/audit";
 import * as auth from "./routes/auth";
 import * as checks from "./routes/checks";
 import * as events from "./routes/events";
@@ -133,6 +134,10 @@ const routes: Route[] = [
 	{
 		pattern: /^\/invites\/([^/]+)\/use$/,
 		handlers: { POST: invites.markUsed },
+	},
+	{
+		pattern: /^\/audit$/,
+		handlers: { GET: audit.list, POST: audit.create },
 	},
 ];
 

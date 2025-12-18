@@ -2,6 +2,7 @@ import { fail, redirect } from "@sveltejs/kit";
 import { clearSession, getSessionId } from "$lib/server";
 import * as api from "$lib/server/api";
 import type { Actions, PageServerLoad } from "./$types";
+import type { AuditLog, Invite } from "$lib";
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
@@ -15,23 +16,25 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		redirect(302, "/login");
 	}
 
-	let invites: api.Invite[] = [];
+	let invites: Invite[] = [];
 	let events: Awaited<ReturnType<typeof api.getEvents>> = [];
 	let groups: Awaited<ReturnType<typeof api.getGroups>> = [];
+	let auditLogs: AuditLog[] = [];
 
 	if (user.role === "admin") {
-		[invites, events, groups] = await Promise.all([
+		[invites, events, groups, auditLogs] = await Promise.all([
 			api.getInvites(user.id).catch(() => []),
 			api.getEvents({ limit: 20 }).catch(() => []),
 			api.getGroups().catch(() => []),
+			api.getAuditLogs({ limit: 50 }).catch(() => []),
 		]);
 	}
 
-	return { user, invites, events, groups };
+	return { user, invites, events, groups, auditLogs };
 };
 
 export const actions: Actions = {
-	password: async ({ request, cookies }) => {
+	password: async ({ request, cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -56,6 +59,7 @@ export const actions: Actions = {
 
 		try {
 			await api.changePassword(sessionId, currentPassword, newPassword);
+			await api.auditLog(sessionId, "update", "password", sessionId, null, getClientAddress());
 			return { success: "password updated" };
 		} catch (err) {
 			return fail(400, {
@@ -64,7 +68,7 @@ export const actions: Actions = {
 		}
 	},
 
-	createInvite: async ({ cookies }) => {
+	createInvite: async ({ cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -76,7 +80,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.createInvite(user.id);
+			const invite = await api.createInvite(user.id);
+			await api.auditLog(user.id, "create", "invite", invite.id, { code: invite.code }, getClientAddress());
 			return { inviteSuccess: "invite created" };
 		} catch (err) {
 			return fail(400, {
@@ -85,7 +90,7 @@ export const actions: Actions = {
 		}
 	},
 
-	deleteInvite: async ({ request, cookies }) => {
+	deleteInvite: async ({ request, cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -105,6 +110,7 @@ export const actions: Actions = {
 
 		try {
 			await api.deleteInvite(inviteId);
+			await api.auditLog(user.id, "delete", "invite", inviteId, null, getClientAddress());
 			return { inviteSuccess: "invite deleted" };
 		} catch (err) {
 			return fail(400, {
@@ -118,7 +124,7 @@ export const actions: Actions = {
 		redirect(302, "/login");
 	},
 
-	createEvent: async ({ request, cookies }) => {
+	createEvent: async ({ request, cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -141,13 +147,14 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.createEvent({
+			const event = await api.createEvent({
 				title,
 				description,
 				type,
 				status,
 				groupName: groupName || null,
 			});
+			await api.auditLog(user.id, "create", "event", event.id, { title, type, status, groupName }, getClientAddress());
 			return { eventSuccess: "event created" };
 		} catch (err) {
 			return fail(400, {
@@ -156,7 +163,7 @@ export const actions: Actions = {
 		}
 	},
 
-	resolveEvent: async ({ request, cookies }) => {
+	resolveEvent: async ({ request, cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -176,6 +183,7 @@ export const actions: Actions = {
 
 		try {
 			await api.resolveEvent(eventId);
+			await api.auditLog(user.id, "resolve", "event", eventId, null, getClientAddress());
 			return { eventSuccess: "event resolved" };
 		} catch (err) {
 			return fail(400, {
@@ -184,7 +192,7 @@ export const actions: Actions = {
 		}
 	},
 
-	deleteEvent: async ({ request, cookies }) => {
+	deleteEvent: async ({ request, cookies, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) {
 			redirect(302, "/login");
@@ -204,6 +212,7 @@ export const actions: Actions = {
 
 		try {
 			await api.deleteEvent(eventId);
+			await api.auditLog(user.id, "delete", "event", eventId, null, getClientAddress());
 			return { eventSuccess: "event deleted" };
 		} catch (err) {
 			return fail(400, {

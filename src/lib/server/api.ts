@@ -1,5 +1,5 @@
 import { env } from "$env/dynamic/private";
-import type { Group, Service, ServiceCheck, ServiceStats, StatusEvent, User } from "../../types";
+import type { AuditLog, Group, Invite, Service, ServiceCheck, ServiceStats, StatusEvent, User } from "../../types";
 
 const API_URL = env.API_URL || "http://localhost:3001";
 
@@ -239,17 +239,6 @@ export async function updateGroupPositions(
 	});
 }
 
-export interface Invite {
-	id: string;
-	code: string;
-	createdBy: string;
-	usedBy: string | null;
-	usedByUsername: string | null;
-	usedAt: string | null;
-	expiresAt: string | null;
-	createdAt: string;
-}
-
 export async function getInvites(userId: string): Promise<Invite[]> {
 	const result = await request<{ invites: Invite[] }>(`/invites/user/${userId}`);
 	return result.invites;
@@ -357,4 +346,36 @@ export async function resolveEvent(id: string): Promise<void> {
 
 export async function deleteEvent(id: string): Promise<void> {
 	await request(`/events/${id}`, { method: "DELETE" });
+}
+
+export async function getAuditLogs(options?: {
+	limit?: number;
+	offset?: number;
+	action?: string;
+	entityType?: string;
+	userId?: string;
+}): Promise<AuditLog[]> {
+	const params = new URLSearchParams();
+	if (options?.limit) params.set("limit", options.limit.toString());
+	if (options?.offset) params.set("offset", options.offset.toString());
+	if (options?.action) params.set("action", options.action);
+	if (options?.entityType) params.set("entityType", options.entityType);
+	if (options?.userId) params.set("userId", options.userId);
+	const query = params.toString() ? `?${params.toString()}` : "";
+	const result = await request<{ logs: AuditLog[] }>(`/audit${query}`);
+	return result.logs;
+}
+
+export async function auditLog(
+	userId: string,
+	action: string,
+	entityType: string,
+	entityId: string | null = null,
+	details: Record<string, unknown> | null = null,
+	ipAddress: string | null = null,
+): Promise<void> {
+	await request("/audit", {
+		method: "POST",
+		body: JSON.stringify({ userId, action, entityType, entityId, details, ipAddress }),
+	});
 }

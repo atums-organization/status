@@ -1,13 +1,5 @@
 import { writable } from "svelte/store";
-
-export type NotificationType = "success" | "error" | "warning" | "info";
-
-export interface Notification {
-	id: string;
-	type: NotificationType;
-	message: string;
-	duration?: number;
-}
+import type { Notification, NotificationType } from "../../types";
 
 function createNotificationStore() {
 	const { subscribe, update } = writable<Notification[]>([]);

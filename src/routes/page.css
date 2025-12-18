@@ -215,28 +215,12 @@
 	pointer-events: none;
 }
 
-.service-status-area {
-	position: absolute;
-	top: var(--spacing-sm);
-	right: var(--spacing-sm);
-	display: flex;
-	align-items: center;
-	gap: var(--spacing-sm);
-	isolation: isolate;
-	contain: layout style;
-}
-
-.service-status-area .service-status {
-	position: static;
-	width: 12px !important;
-	height: 12px !important;
-	flex-shrink: 0;
-}
-
 .service-uptime {
-	font-size: var(--text-xs) !important;
+	position: absolute;
+	top: var(--spacing-md);
+	right: var(--spacing-md);
+	font-size: var(--text-xs);
 	font-weight: var(--font-medium);
 	white-space: nowrap;
-	pointer-events: none;
 }
 

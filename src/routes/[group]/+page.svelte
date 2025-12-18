@@ -78,6 +78,21 @@ let serviceStats = $state<ServiceStats | null>(null);
 let loading = $state(false);
 let showRecentEvents = $state(false);
 
+const overallUptime = $derived.by(() => {
+	const uptime = data.uptime || {};
+	const services = data.services || [];
+	if (services.length === 0) return null;
+
+	const values = services
+		.map((s) => uptime[s.id])
+		.filter((u) => u && u.totalChecks > 0);
+
+	if (values.length === 0) return null;
+
+	const avg = values.reduce((sum, u) => sum + u.uptimePercent, 0) / values.length;
+	return Math.round(avg * 100) / 100;
+});
+
 function formatTime(ms: number | null): string {
 	if (ms === null) return "-";
 	return formatResponseTime(ms);
@@ -148,11 +163,25 @@ let hoveredPoint = $state<{
 	y: number;
 } | null>(null);
 
+let isMobile = $state(false);
+
+onMount(() => {
+	const checkMobile = () => {
+		isMobile = window.innerWidth < 600;
+	};
+	checkMobile();
+	window.addEventListener("resize", checkMobile);
+	return () => window.removeEventListener("resize", checkMobile);
+});
+
 const graphData = $derived(() => {
 	if (serviceChecks.length === 0)
 		return { points: [], maxTime: 0, minTime: 0, timeLabels: [], yLabels: [] };
 
-	const reversed = [...serviceChecks].reverse();
+	const maxPoints = isMobile ? 20 : 50;
+	const allChecks = [...serviceChecks].reverse();
+	const step = allChecks.length > maxPoints ? Math.ceil(allChecks.length / maxPoints) : 1;
+	const reversed = allChecks.filter((_, i) => i % step === 0);
 	const times = reversed.map((c) => c.responseTime ?? 0);
 	const maxTime = Math.max(...times);
 	const minTime = Math.min(...times);
@@ -266,6 +295,18 @@ function formatGraphDate(date: string): string {
 	</header>
 
 	<main class="main centered">
+		{#if overallUptime !== null}
+			<div class="overall-uptime">
+				<span class="uptime-label">group uptime</span>
+				<span
+					class="uptime-value"
+					class:is-success={overallUptime >= 90}
+					class:is-warning={overallUptime >= 75 && overallUptime < 90}
+					class:is-error={overallUptime < 75}
+				>{overallUptime.toFixed(2)}%</span>
+			</div>
+		{/if}
+
 		<div class="page-header">
 			<h2 class="page-title">{data.groupName}</h2>
 			<div class="page-actions">
@@ -325,6 +366,7 @@ function formatGraphDate(date: string): string {
 		<div class="services-list">
 			{#each data.services as service}
 				{@const check = checks[service.id]}
+				{@const serviceUptime = data.uptime?.[service.id]}
 				<div
 					class="service-card"
 					onclick={() => openServiceDetail(service)}
@@ -332,12 +374,14 @@ function formatGraphDate(date: string): string {
 					role="button"
 					tabindex="0"
 				>
-					<span
-						class="service-status"
-						class:success={check?.success}
-						class:error={check && !check.success}
-						class:pending={!check}
-					></span>
+					{#if serviceUptime && serviceUptime.totalChecks > 0}
+						<span
+							class="service-uptime"
+							class:is-success={serviceUptime.uptimePercent >= 90}
+							class:is-warning={serviceUptime.uptimePercent >= 75 && serviceUptime.uptimePercent < 90}
+							class:is-error={serviceUptime.uptimePercent < 75}
+						>{serviceUptime.uptimePercent.toFixed(1)}%</span>
+					{/if}
 					<div class="service-info">
 						<div class="service-header">
 							<h3>{service.name}</h3>
@@ -441,7 +485,7 @@ function formatGraphDate(date: string): string {
 
 					{#if serviceChecks.length > 1}
 						<div class="graph-section">
-							<h3>Response Time ({serviceChecks.length} checks)</h3>
+							<h3>Response Time ({graphData().points.length} checks)</h3>
 							<div class="graph-wrapper">
 								<div class="y-axis">
 									{#each graphData().yLabels as label}

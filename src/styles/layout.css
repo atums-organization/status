@@ -87,3 +87,29 @@
 	margin: 0 auto;
 	width: 100%;
 }
+
+@media (max-width: 600px) {
+	.header {
+		flex-wrap: wrap;
+		gap: var(--spacing-sm);
+		padding: var(--spacing-sm) var(--spacing-md);
+	}
+
+	.header h1 {
+		font-size: var(--text-base);
+	}
+
+	.nav {
+		order: 3;
+		width: 100%;
+		justify-content: center;
+		gap: var(--spacing-md);
+		padding-top: var(--spacing-sm);
+		border-top: 1px solid var(--color-border);
+		margin-top: var(--spacing-xs);
+	}
+
+	.main {
+		padding: var(--spacing-md);
+	}
+}

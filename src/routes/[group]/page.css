@@ -160,3 +160,45 @@
 	font-size: var(--text-xs);
 	margin-bottom: 0;
 }
+
+.overall-uptime {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: var(--spacing-md) var(--spacing-lg);
+	background: var(--color-bg-elevated);
+	margin-bottom: var(--spacing-xl);
+}
+
+.overall-uptime .uptime-label {
+	color: var(--color-text-secondary);
+	font-size: var(--text-sm);
+}
+
+.overall-uptime .uptime-value {
+	font-size: var(--text-xl);
+	font-weight: var(--font-semibold);
+}
+
+.uptime-value.is-success,
+.service-uptime.is-success {
+	color: var(--color-success);
+}
+
+.uptime-value.is-warning,
+.service-uptime.is-warning {
+	color: var(--color-warning, #f59e0b);
+}
+
+.uptime-value.is-error,
+.service-uptime.is-error {
+	color: var(--color-error);
+}
+
+.service-uptime {
+	position: absolute;
+	top: var(--spacing-md);
+	right: var(--spacing-md);
+	font-size: var(--text-xs);
+	font-weight: var(--font-medium);
+}

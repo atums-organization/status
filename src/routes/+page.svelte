@@ -382,6 +382,17 @@
 		y: number;
 	} | null>(null);
 
+	let isMobile = $state(false);
+
+	onMount(() => {
+		const checkMobile = () => {
+			isMobile = window.innerWidth < 600;
+		};
+		checkMobile();
+		window.addEventListener("resize", checkMobile);
+		return () => window.removeEventListener("resize", checkMobile);
+	});
+
 	const graphData = $derived.by(() => {
 		if (serviceChecks.length === 0)
 			return {
@@ -392,7 +403,10 @@
 				yLabels: [],
 			};
 
-		const reversed = [...serviceChecks].reverse();
+		const maxPoints = isMobile ? 20 : 50;
+		const allChecks = [...serviceChecks].reverse();
+		const step = allChecks.length > maxPoints ? Math.ceil(allChecks.length / maxPoints) : 1;
+		const reversed = allChecks.filter((_, i) => i % step === 0);
 		const times = reversed.map((c) => c.responseTime ?? 0);
 		const maxTime = Math.max(...times);
 		const minTime = Math.min(...times);
@@ -652,31 +666,22 @@
 									role="button"
 									tabindex="0"
 								>
-									<div class="service-status-area">
-										{#if serviceUptime && serviceUptime.totalChecks > 0}
-											<span
-												class="service-uptime"
-												class:is-success={serviceUptime.uptimePercent >=
-													90}
-												class:is-warning={serviceUptime.uptimePercent >=
-													75 &&
-													serviceUptime.uptimePercent <
-														90}
-												class:is-error={serviceUptime.uptimePercent <
-													75}
-												>{serviceUptime.uptimePercent.toFixed(
-													1,
-												)}%</span
-											>
-										{/if}
+									{#if serviceUptime && serviceUptime.totalChecks > 0}
 										<span
-											class="service-status"
-											class:success={check?.success}
-											class:error={check &&
-												!check.success}
-											class:pending={!check}
-										></span>
-									</div>
+											class="service-uptime"
+											class:is-success={serviceUptime.uptimePercent >=
+												90}
+											class:is-warning={serviceUptime.uptimePercent >=
+												75 &&
+												serviceUptime.uptimePercent <
+													90}
+											class:is-error={serviceUptime.uptimePercent <
+												75}
+											>{serviceUptime.uptimePercent.toFixed(
+												1,
+											)}%</span
+										>
+									{/if}
 									<div class="service-info">
 										<div class="service-header">
 											<h3>{service.name}</h3>
@@ -824,29 +829,21 @@
 							role="button"
 							tabindex="0"
 						>
-							<div class="service-status-area">
-								{#if serviceUptime && serviceUptime.totalChecks > 0}
-									<span
-										class="service-uptime"
-										class:is-success={serviceUptime.uptimePercent >=
-											90}
-										class:is-warning={serviceUptime.uptimePercent >=
-											75 &&
-											serviceUptime.uptimePercent < 90}
-										class:is-error={serviceUptime.uptimePercent <
-											75}
-										>{serviceUptime.uptimePercent.toFixed(
-											1,
-										)}%</span
-									>
-								{/if}
+							{#if serviceUptime && serviceUptime.totalChecks > 0}
 								<span
-									class="service-status"
-									class:success={check?.success}
-									class:error={check && !check.success}
-									class:pending={!check}
-								></span>
-							</div>
+									class="service-uptime"
+									class:is-success={serviceUptime.uptimePercent >=
+										90}
+									class:is-warning={serviceUptime.uptimePercent >=
+										75 &&
+										serviceUptime.uptimePercent < 90}
+									class:is-error={serviceUptime.uptimePercent <
+										75}
+									>{serviceUptime.uptimePercent.toFixed(
+										1,
+									)}%</span
+								>
+							{/if}
 							<div class="service-info">
 								<div class="service-header">
 									<h3>{service.name}</h3>
@@ -1032,7 +1029,7 @@
 					{#if serviceChecks.length > 1}
 						<div class="graph-section">
 							<h3>
-								Response Time ({serviceChecks.length} checks)
+								Response Time ({graphData.points.length} checks)
 							</h3>
 							<div class="graph-wrapper">
 								<div class="y-axis">

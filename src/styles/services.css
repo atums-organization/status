@@ -170,3 +170,31 @@
 	gap: var(--spacing-sm);
 	flex-shrink: 0;
 }
+
+@media (max-width: 600px) {
+	.service-card {
+		padding: var(--spacing-md);
+	}
+
+	.service-header h3 {
+		font-size: var(--text-base);
+	}
+
+	.service-info .url {
+		font-size: var(--text-xs);
+		word-break: break-all;
+	}
+
+	.meta {
+		flex-wrap: wrap;
+		gap: var(--spacing-xs) var(--spacing-sm);
+	}
+
+	.meta .last-check {
+		width: 100%;
+	}
+
+	.service-actions {
+		flex-direction: column;
+	}
+}

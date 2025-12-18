@@ -4,6 +4,7 @@ import type { LayoutServerLoad } from "./$types";
 
 export const load: LayoutServerLoad = async () => {
 	let siteName = "atums/status";
+	let siteIcon = "";
 	let siteUrl = "";
 	let sourceUrl = "";
 	let discordUrl = "";
@@ -11,6 +12,7 @@ export const load: LayoutServerLoad = async () => {
 	try {
 		const settings = await getSettings();
 		siteName = settings.siteName || "atums/status";
+		siteIcon = settings.siteIcon || "";
 		siteUrl = settings.siteUrl || "";
 		sourceUrl = settings.sourceUrl || "";
 		discordUrl = settings.discordUrl || "";
@@ -27,6 +29,7 @@ export const load: LayoutServerLoad = async () => {
 	return {
 		site: {
 			name: siteName,
+			icon: siteIcon,
 			brand,
 			suffix,
 			url: siteUrl,

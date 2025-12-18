@@ -6,6 +6,7 @@ import type { SiteSettings } from "$lib";
 const { settings }: { settings: SiteSettings | null } = $props();
 
 let siteName = $state(settings?.siteName || "");
+let siteIcon = $state(settings?.siteIcon || "");
 let siteUrl = $state(settings?.siteUrl || "");
 let sourceUrl = $state(settings?.sourceUrl || "");
 let discordUrl = $state(settings?.discordUrl || "");
@@ -15,6 +16,7 @@ let securityCanonical = $state(settings?.securityCanonical || "");
 $effect(() => {
 	if (settings) {
 		siteName = settings.siteName || "";
+		siteIcon = settings.siteIcon || "";
 		siteUrl = settings.siteUrl || "";
 		sourceUrl = settings.sourceUrl || "";
 		discordUrl = settings.discordUrl || "";
@@ -47,6 +49,17 @@ $effect(() => {
 				bind:value={siteName}
 			/>
 			<label for="siteName">site name (use / to split brand)</label>
+		</div>
+
+		<div class="form-group">
+			<input
+				type="url"
+				id="siteIcon"
+				name="siteIcon"
+				placeholder=" "
+				bind:value={siteIcon}
+			/>
+			<label for="siteIcon">site icon (.jpg or .png url)</label>
 		</div>
 
 		<div class="form-group">

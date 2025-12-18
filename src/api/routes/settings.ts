@@ -4,6 +4,7 @@ import { ok, badRequest, unauthorized, forbidden } from "../utils/response";
 
 export interface SiteSettings {
 	siteName: string;
+	siteIcon: string;
 	siteUrl: string;
 	sourceUrl: string;
 	discordUrl: string;
@@ -21,6 +22,7 @@ export async function getSettings(): Promise<SiteSettings> {
 
 	return {
 		siteName: map.site_name || "atums/status",
+		siteIcon: map.site_icon || "",
 		siteUrl: map.site_url || "",
 		sourceUrl: map.source_url || "",
 		discordUrl: map.discord_url || "",
@@ -44,12 +46,26 @@ export async function update(req: Request): Promise<Response> {
 	}
 
 	const body = await req.json();
-	const { siteName, siteUrl, sourceUrl, discordUrl, securityContact, securityCanonical } = body;
+	const { siteName, siteIcon, siteUrl, sourceUrl, discordUrl, securityContact, securityCanonical } = body;
 
 	const updates: Array<{ key: string; value: string }> = [];
 
 	if (typeof siteName === "string") {
 		updates.push({ key: "site_name", value: siteName });
+	}
+	if (typeof siteIcon === "string") {
+		if (siteIcon !== "") {
+			try {
+				const url = new URL(siteIcon);
+				const path = url.pathname.toLowerCase();
+				if (!path.endsWith(".jpg") && !path.endsWith(".jpeg") && !path.endsWith(".png")) {
+					return badRequest("Site icon must be a .jpg or .png URL");
+				}
+			} catch {
+				return badRequest("Site icon must be a valid URL");
+			}
+		}
+		updates.push({ key: "site_icon", value: siteIcon });
 	}
 	if (typeof siteUrl === "string") {
 		updates.push({ key: "site_url", value: siteUrl });

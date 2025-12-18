@@ -1,5 +1,6 @@
 export interface SiteSettings {
 	siteName: string;
+	siteIcon: string;
 	siteUrl: string;
 	sourceUrl: string;
 	discordUrl: string;

@@ -3,11 +3,13 @@ import "../app.css";
 import { Notifications } from "$lib";
 import favicon from "$lib/assets/favicon.svg";
 
-const { children } = $props();
+const { data, children } = $props();
+
+const iconUrl = $derived(data.site.icon || favicon);
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" href={iconUrl} />
 </svelte:head>
 
 <Notifications />

@@ -7,5 +7,6 @@ export type { AuditLog } from "./audit";
 export type { Invite } from "./invite";
 export type { SqlMigration } from "./migration";
 export type { SiteSettings } from "./settings";
-export type { Webhook, WebhookType, CreateWebhookData, UpdateWebhookData } from "./webhook";
+export type { Webhook, WebhookType, CreateWebhookData, UpdateWebhookData, EmbedField, DiscordEmbed, DiscordPayload, GenericWebhookPayload } from "./webhook";
 export type { ApiResponse, AuthContext, RouteHandler, Route, RequestOptions } from "./api";
+export type { SSEMessage, CheckUpdateHandler, SSEClient } from "./sse";

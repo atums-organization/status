@@ -1,7 +1,7 @@
-import { env } from "$env/dynamic/private";
+import { env } from "$env/dynamic/public";
 import type { ApiResponse, RequestOptions } from "../../../types";
 
-const API_URL = env.API_URL || "http://localhost:3001";
+const API_URL = env.PUBLIC_API_URL || "http://localhost:3001/api";
 
 export async function request<T>(path: string, options?: RequestOptions): Promise<T> {
 	const headers: Record<string, string> = {

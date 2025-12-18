@@ -9,12 +9,28 @@ import {
 	formatShortTime as formatShortTimeUtil,
 	formatResponseTime,
 } from "$lib";
+import { createSSEConnection } from "$lib/sse";
 import type { PageData } from "./$types";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
+import { onMount } from "svelte";
 import "./page.css";
 
 const { data }: { data: PageData } = $props();
+
+// eslint-disable-next-line svelte/prefer-writable-derived -- need mutable state for SSE updates
+let checks = $state<Record<string, ServiceCheck | null>>({ ...data.checks });
+
+$effect(() => {
+	checks = { ...data.checks };
+});
+
+onMount(() => {
+	const cleanup = createSSEConnection((serviceId, check) => {
+		checks[serviceId] = check;
+	}, data.apiUrl);
+	return cleanup;
+});
 
 $effect(() => {
 	const modalParam = page.url.searchParams.get("modal");
@@ -300,7 +316,7 @@ function formatGraphDate(date: string): string {
 
 		<div class="services-list">
 			{#each data.services as service}
-				{@const check = data.checks[service.id]}
+				{@const check = checks[service.id]}
 				<div
 					class="service-card"
 					onclick={() => openServiceDetail(service)}
@@ -381,10 +397,10 @@ function formatGraphDate(date: string): string {
 					<h2>{selectedService.name}</h2>
 					<span
 						class="modal-status"
-						class:success={data.checks[selectedService.id]?.success}
-						class:error={data.checks[selectedService.id] && !data.checks[selectedService.id]?.success}
+						class:success={checks[selectedService.id]?.success}
+						class:error={checks[selectedService.id] && !checks[selectedService.id]?.success}
 					>
-						{data.checks[selectedService.id]?.success ? "operational" : "degraded"}
+						{checks[selectedService.id]?.success ? "operational" : "degraded"}
 					</span>
 				</div>
 				<button type="button" class="modal-close" onclick={closeModal}>&times;</button>

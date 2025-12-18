@@ -9,13 +9,29 @@
 		formatShortTime as formatShortTimeUtil,
 		formatResponseTime,
 	} from "$lib";
+	import { createSSEConnection } from "$lib/sse";
 	import type { ActionData, PageData } from "./$types";
 	import { enhance } from "$app/forms";
 	import { goto, invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
+	import { onMount } from "svelte";
 	import "./page.css";
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// eslint-disable-next-line svelte/prefer-writable-derived -- need mutable state for SSE updates
+	let checks = $state<Record<string, ServiceCheck | null>>({ ...data.checks });
+
+	$effect(() => {
+		checks = { ...data.checks };
+	});
+
+	onMount(() => {
+		const cleanup = createSSEConnection((serviceId, check) => {
+			checks[serviceId] = check;
+		}, data.apiUrl);
+		return cleanup;
+	});
 
 	$effect(() => {
 		const modalParam = page.url.searchParams.get("modal");
@@ -597,7 +613,7 @@
 							role="list"
 						>
 							{#each services as service (service.id)}
-								{@const check = data.checks[service.id]}
+								{@const check = checks[service.id]}
 								{@const serviceUptime =
 									data.uptime?.[service.id]}
 								<div
@@ -777,7 +793,7 @@
 					role="list"
 				>
 					{#each groupedServices.ungrouped as service (service.id)}
-						{@const check = data.checks[service.id]}
+						{@const check = checks[service.id]}
 						{@const serviceUptime = data.uptime?.[service.id]}
 						<div
 							class="service-card"
@@ -948,11 +964,11 @@
 					<h2>{selectedService.name}</h2>
 					<span
 						class="modal-status"
-						class:success={data.checks[selectedService.id]?.success}
-						class:error={data.checks[selectedService.id] &&
-							!data.checks[selectedService.id]?.success}
+						class:success={checks[selectedService.id]?.success}
+						class:error={checks[selectedService.id] &&
+							!checks[selectedService.id]?.success}
 					>
-						{data.checks[selectedService.id]?.success
+						{checks[selectedService.id]?.success
 							? "operational"
 							: "degraded"}
 					</span>

@@ -34,3 +34,39 @@ export type UpdateWebhookData = Partial<{
 	messageUp: string;
 	avatarUrl: string | null;
 }>;
+
+export interface EmbedField {
+	name: string;
+	value: string;
+	inline?: boolean;
+}
+
+export interface DiscordEmbed {
+	title?: string;
+	description?: string;
+	color?: number;
+	fields?: EmbedField[];
+	timestamp?: string;
+	footer?: { text: string };
+}
+
+export interface DiscordPayload {
+	content?: string;
+	username?: string;
+	avatar_url?: string;
+	embeds?: DiscordEmbed[];
+}
+
+export interface GenericWebhookPayload {
+	event: string;
+	service: {
+		name: string;
+		url: string;
+		group?: string | null;
+	};
+	status: "up" | "down" | "degraded";
+	statusCode?: number | null;
+	responseTime?: number;
+	errorMessage?: string | null;
+	timestamp: string;
+}

@@ -6,12 +6,17 @@ import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 import * as settings from "./routes/settings";
 import * as webhooks from "./routes/webhooks";
+import { handleSSE } from "./utils/sse";
 import { notFound } from "./utils/response";
 import type { Route } from "../types";
 
 const basePath = process.env.API_BASE_PATH || "";
 
 const routes: Route[] = [
+	{
+		pattern: /^\/events\/stream$/,
+		handlers: { GET: handleSSE },
+	},
 	{
 		pattern: /^\/\.well-known\/security\.txt$/,
 		handlers: { GET: settings.getSecurityTxt },

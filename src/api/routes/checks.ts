@@ -3,6 +3,7 @@ import type { Service, ServiceCheck } from "../types";
 import { getAuthContext, requireAuth } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 import { sendServiceDown, sendServiceUp } from "../utils/discord";
+import { broadcastCheck } from "../utils/sse";
 
 function rowToCheck(row: Record<string, unknown>): ServiceCheck {
 	return {
@@ -88,7 +89,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
 	}
 
-	return {
+	const check: ServiceCheck = {
 		id,
 		serviceId: service.id,
 		statusCode,
@@ -97,6 +98,10 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		errorMessage,
 		checkedAt: new Date().toISOString(),
 	};
+
+	broadcastCheck(service.id, check);
+
+	return check;
 }
 
 async function canAccessService(req: Request, serviceId: string): Promise<{ allowed: boolean; service?: Service; response?: Response }> {

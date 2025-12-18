@@ -1,42 +1,6 @@
 import { getSettings } from "../routes/settings";
 import { getWebhooksForGroup } from "../routes/webhooks";
-import type { Webhook } from "../../types";
-
-interface EmbedField {
-	name: string;
-	value: string;
-	inline?: boolean;
-}
-
-interface DiscordEmbed {
-	title?: string;
-	description?: string;
-	color?: number;
-	fields?: EmbedField[];
-	timestamp?: string;
-	footer?: { text: string };
-}
-
-interface DiscordPayload {
-	content?: string;
-	username?: string;
-	avatar_url?: string;
-	embeds?: DiscordEmbed[];
-}
-
-interface GenericWebhookPayload {
-	event: string;
-	service: {
-		name: string;
-		url: string;
-		group?: string | null;
-	};
-	status: "up" | "down" | "degraded";
-	statusCode?: number | null;
-	responseTime?: number;
-	errorMessage?: string | null;
-	timestamp: string;
-}
+import type { Webhook, DiscordPayload, GenericWebhookPayload } from "../../types";
 
 const Colors = {
 	success: 0x22c55e,

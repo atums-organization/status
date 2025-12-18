@@ -4,18 +4,25 @@
 	import "./error.css";
 
 	const discordUrl = env.PUBLIC_DISCORD_URL || null;
+	const sourceUrl = env.PUBLIC_SOURCE_URL || null;
+	const siteName = env.PUBLIC_SITE_NAME || "atums/status";
+	const parts = siteName.split("/");
+	const brand = parts[0] || siteName;
+	const suffix = parts.length > 1 ? `/${parts.slice(1).join("/")}` : "";
 </script>
 
 <svelte:head>
-	<title>{$page.status} | atums/status</title>
+	<title>{$page.status} | {siteName}</title>
 </svelte:head>
 
 <div class="container">
 	<header class="header">
-		<h1><a href="/" class="brand-link"><span class="brand">atums</span>/status</a></h1>
+		<h1><a href="/" class="brand-link"><span class="brand">{brand}</span>{suffix}</a></h1>
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
-			<a href="https://heliopolis.live/atums/status" target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+			{#if sourceUrl}
+				<a href={sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+			{/if}
 			{#if discordUrl}
 				<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
 			{/if}

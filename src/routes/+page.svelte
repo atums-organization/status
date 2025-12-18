@@ -16,6 +16,18 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
+	const embedColor = $derived(
+		data.embed.status === "operational"
+			? "#22c55e"
+			: data.embed.status === "degraded"
+				? "#eab308"
+				: data.embed.status === "outage"
+					? "#ef4444"
+					: "#808080",
+	);
+
+	const canonicalUrl = $derived(data.embed.siteUrl || undefined);
+
 	let editMode = $state(false);
 	let selectedService = $state<Service | null>(null);
 	let editingService = $state<Service | null>(null);
@@ -414,17 +426,35 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{data.embed.title}</title>
+	<meta name="description" content={data.embed.description} />
+	<meta name="theme-color" content={embedColor} />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={data.embed.title} />
+	<meta property="og:description" content={data.embed.description} />
+	<meta property="og:site_name" content={data.embed.siteName} />
+	{#if canonicalUrl}
+		<meta property="og:url" content={canonicalUrl} />
+	{/if}
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={data.embed.title} />
+	<meta name="twitter:description" content={data.embed.description} />
+</svelte:head>
+
 <div class="container">
 	<header class="header">
-		<h1><span class="brand">atums</span>/status</h1>
+		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
 		<nav class="nav">
 			<a href="/" class="nav-link active">index</a>
-			<a
-				href="https://heliopolis.live/atums/status"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="nav-link">source</a
-			>
+			{#if data.site.sourceUrl}
+				<a
+					href={data.site.sourceUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="nav-link">source</a
+				>
+			{/if}
 			{#if data.discordUrl}
 				<a
 					href={data.discordUrl}

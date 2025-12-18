@@ -9,7 +9,7 @@
 
 <div class="login-container">
 	<div class="card">
-		<h1><span class="brand">atums</span>/status</h1>
+		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
 
 		{#if !data.isFirstUser}
 			<div class="tabs">

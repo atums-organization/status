@@ -14,6 +14,20 @@ import "./page.css";
 
 const { data }: { data: PageData } = $props();
 
+const embedColor = $derived(
+	data.embed.status === "operational"
+		? "#22c55e"
+		: data.embed.status === "degraded"
+			? "#eab308"
+			: data.embed.status === "outage"
+				? "#ef4444"
+				: "#808080",
+);
+
+const canonicalUrl = $derived(
+	data.embed.siteUrl ? `${data.embed.siteUrl}/${encodeURIComponent(data.groupName)}` : undefined,
+);
+
 let selectedService = $state<Service | null>(null);
 let serviceChecks = $state<ServiceCheck[]>([]);
 let serviceStats = $state<ServiceStats | null>(null);
@@ -167,12 +181,30 @@ function formatGraphDate(date: string): string {
 }
 </script>
 
+<svelte:head>
+	<title>{data.embed.title}</title>
+	<meta name="description" content={data.embed.description} />
+	<meta name="theme-color" content={embedColor} />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={data.embed.title} />
+	<meta property="og:description" content={data.embed.description} />
+	<meta property="og:site_name" content={data.embed.siteName} />
+	{#if canonicalUrl}
+		<meta property="og:url" content={canonicalUrl} />
+	{/if}
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={data.embed.title} />
+	<meta name="twitter:description" content={data.embed.description} />
+</svelte:head>
+
 <div class="container">
 	<header class="header">
-		<h1><a href="/" class="brand-link"><span class="brand">atums</span>/status</a></h1>
+		<h1><a href="/" class="brand-link"><span class="brand">{data.site.brand}</span>{data.site.suffix}</a></h1>
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
-			<a href="https://heliopolis.live/atums/status" target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+			{#if data.site.sourceUrl}
+				<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+			{/if}
 			{#if data.discordUrl}
 				<a href={data.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
 			{/if}

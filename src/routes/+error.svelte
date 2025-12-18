@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { page } from "$app/stores";
+	import { env } from "$env/dynamic/public";
 	import "./error.css";
+
+	const discordUrl = env.PUBLIC_DISCORD_URL || null;
 </script>
 
 <svelte:head>
@@ -13,6 +16,9 @@
 		<nav class="nav">
 			<a href="/" class="nav-link">index</a>
 			<a href="https://heliopolis.live/atums/status" target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+			{#if discordUrl}
+				<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
+			{/if}
 		</nav>
 	</header>
 

@@ -7,6 +7,7 @@ import { env } from "$env/dynamic/public";
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
 	const timezone = env.PUBLIC_TIMEZONE || "UTC";
+	const discordUrl = env.PUBLIC_DISCORD_URL || null;
 
 	if (!sessionId) {
 		const [services, groups] = await Promise.all([
@@ -21,7 +22,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 						api.getUptimeForServices(serviceIds),
 					])
 				: [{}, {}];
-		return { user: null, services, checks, groups, uptime, timezone };
+		return { user: null, services, checks, groups, uptime, timezone, discordUrl };
 	}
 
 	const user = await api.getUserById(sessionId);
@@ -39,7 +40,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 						api.getUptimeForServices(serviceIds),
 					])
 				: [{}, {}];
-		return { user: null, services, checks, groups, uptime, timezone };
+		return { user: null, services, checks, groups, uptime, timezone, discordUrl };
 	}
 
 	const [services, groups] = await Promise.all([
@@ -55,7 +56,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 				])
 			: [{}, {}];
 
-	return { user, services, checks, groups, uptime, timezone };
+	return { user, services, checks, groups, uptime, timezone, discordUrl };
 };
 
 export const actions: Actions = {

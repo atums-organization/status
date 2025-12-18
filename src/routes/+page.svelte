@@ -425,6 +425,14 @@
 				rel="noopener noreferrer"
 				class="nav-link">source</a
 			>
+			{#if data.discordUrl}
+				<a
+					href={data.discordUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="nav-link">discord</a
+				>
+			{/if}
 		</nav>
 		{#if data.user}
 			<UserMenu user={data.user} />

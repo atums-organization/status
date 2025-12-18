@@ -8,6 +8,7 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 	const groupName = decodeURIComponent(params.group);
 	const sessionId = getSessionId(cookies);
 	const timezone = env.PUBLIC_TIMEZONE || "UTC";
+	const discordUrl = env.PUBLIC_DISCORD_URL || null;
 
 	let services;
 	let user = null;
@@ -43,5 +44,5 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 				])
 			: [{}, {}, [], []];
 
-	return { user, services: filtered, checks, groupName, uptime, timezone, activeEvents, recentEvents };
+	return { user, services: filtered, checks, groupName, uptime, timezone, discordUrl, activeEvents, recentEvents };
 };

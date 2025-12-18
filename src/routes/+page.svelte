@@ -565,7 +565,7 @@
 									>
 								</div>
 							{/if}
-							<a href="/{group.name}"
+							<a href="/{encodeURIComponent(group.name)}"
 								><h2 class="group-title">{group.name}</h2></a
 							>
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}

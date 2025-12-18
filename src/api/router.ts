@@ -5,6 +5,7 @@ import * as events from "./routes/events";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 import * as settings from "./routes/settings";
+import * as webhooks from "./routes/webhooks";
 import { notFound } from "./utils/response";
 import type { Route } from "../types";
 
@@ -138,6 +139,14 @@ const routes: Route[] = [
 	{
 		pattern: /^\/audit$/,
 		handlers: { GET: audit.list, POST: audit.create },
+	},
+	{
+		pattern: /^\/webhooks$/,
+		handlers: { GET: webhooks.list, POST: webhooks.create },
+	},
+	{
+		pattern: /^\/webhooks\/([^/]+)$/,
+		handlers: { PUT: webhooks.update, DELETE: webhooks.remove },
 	},
 ];
 

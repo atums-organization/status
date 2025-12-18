@@ -3,7 +3,7 @@ import { enhance } from "$app/forms";
 import { formatDate, copyToClipboard, notifications } from "$lib";
 import type { Invite } from "$lib";
 
-const { invites, error, success }: { invites: Invite[]; error?: string; success?: string } = $props();
+const { invites }: { invites: Invite[] } = $props();
 
 async function shareInvite(code: string) {
 	const copied = await copyToClipboard(code);
@@ -18,15 +18,17 @@ async function shareInvite(code: string) {
 <section class="settings-section">
 	<h3>invites</h3>
 
-	{#if error}
-		<div class="error-message">{error}</div>
-	{/if}
-
-	{#if success}
-		<div class="success-message">{success}</div>
-	{/if}
-
-	<form method="POST" action="?/createInvite" use:enhance class="invite-create">
+	<form method="POST" action="?/createInvite" use:enhance={() => {
+		return async ({ result, update }) => {
+			if (result.type === "success") {
+				notifications.success("invite created");
+				await update();
+			} else if (result.type === "failure") {
+				const error = result.data?.inviteError as string | undefined;
+				notifications.error(error || "failed to create invite");
+			}
+		};
+	}} class="invite-create">
 		<button type="submit" class="btn">create invite</button>
 	</form>
 
@@ -47,7 +49,17 @@ async function shareInvite(code: string) {
 					</div>
 					{#if !invite.usedBy}
 						<button type="button" class="btn sm" onclick={() => shareInvite(invite.code)}>copy</button>
-						<form method="POST" action="?/deleteInvite" use:enhance class="invite-delete">
+						<form method="POST" action="?/deleteInvite" use:enhance={() => {
+							return async ({ result, update }) => {
+								if (result.type === "success") {
+									notifications.success("invite deleted");
+									await update();
+								} else if (result.type === "failure") {
+									const error = result.data?.inviteError as string | undefined;
+									notifications.error(error || "failed to delete invite");
+								}
+							};
+						}} class="invite-delete">
 							<input type="hidden" name="inviteId" value={invite.id} />
 							<button type="submit" class="btn sm danger">delete</button>
 						</form>

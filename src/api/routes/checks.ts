@@ -2,6 +2,7 @@ import { sql } from "../index";
 import type { Service, ServiceCheck } from "../types";
 import { getAuthContext, requireAuth } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
+import { sendServiceDown, sendServiceUp } from "../utils/discord";
 
 function rowToCheck(row: Record<string, unknown>): ServiceCheck {
 	return {
@@ -35,6 +36,7 @@ function rowToService(row: Record<string, unknown>): Service {
 }
 
 const checkIntervals = new Map<string, ReturnType<typeof setInterval>>();
+const lastCheckStatus = new Map<string, boolean>();
 
 async function performCheck(service: Service): Promise<ServiceCheck> {
 	const id = crypto.randomUUID();
@@ -72,6 +74,19 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		INSERT INTO service_checks (id, service_id, status_code, response_time, success, error_message)
 		VALUES (${id}, ${service.id}, ${statusCode}, ${responseTime}, ${success}, ${errorMessage})
 	`;
+
+	const previousStatus = lastCheckStatus.get(service.id);
+	lastCheckStatus.set(service.id, success);
+
+	if (previousStatus !== undefined && previousStatus !== success) {
+		if (success) {
+			sendServiceUp(service.name, service.displayUrl || service.url, service.groupName, responseTime).catch(() => {});
+		} else {
+			sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
+		}
+	} else if (previousStatus === undefined && !success) {
+		sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
+	}
 
 	return {
 		id,

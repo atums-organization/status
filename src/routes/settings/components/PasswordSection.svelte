@@ -1,21 +1,21 @@
 <script lang="ts">
 import { enhance } from "$app/forms";
-
-const { error, success }: { error?: string; success?: string } = $props();
+import { notifications } from "$lib";
 </script>
 
 <section class="settings-section">
 	<h3>change password</h3>
 
-	{#if error}
-		<div class="error-message">{error}</div>
-	{/if}
-
-	{#if success}
-		<div class="success-message">{success}</div>
-	{/if}
-
-	<form method="POST" action="?/password" class="form" use:enhance>
+	<form method="POST" action="?/password" class="form" use:enhance={() => {
+		return async ({ result }) => {
+			if (result.type === "success") {
+				notifications.success("password updated");
+			} else if (result.type === "failure") {
+				const error = result.data?.error as string | undefined;
+				notifications.error(error || "failed to update password");
+			}
+		};
+	}}>
 		<div class="form-group">
 			<input
 				type="password"

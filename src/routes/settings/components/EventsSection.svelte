@@ -1,23 +1,25 @@
 <script lang="ts">
 import { enhance } from "$app/forms";
-import { formatDate } from "$lib";
+import { formatDate, notifications } from "$lib";
 import type { StatusEvent, Group } from "$lib";
 
-const { events, groups, error, success }: { events: StatusEvent[]; groups: Group[]; error?: string; success?: string } = $props();
+const { events, groups }: { events: StatusEvent[]; groups: Group[] } = $props();
 </script>
 
 <section class="settings-section">
 	<h3>events</h3>
 
-	{#if error}
-		<div class="error-message">{error}</div>
-	{/if}
-
-	{#if success}
-		<div class="success-message">{success}</div>
-	{/if}
-
-	<form method="POST" action="?/createEvent" use:enhance class="form event-form">
+	<form method="POST" action="?/createEvent" use:enhance={() => {
+		return async ({ result, update }) => {
+			if (result.type === "success") {
+				notifications.success("event created");
+				await update();
+			} else if (result.type === "failure") {
+				const error = result.data?.eventError as string | undefined;
+				notifications.error(error || "failed to create event");
+			}
+		};
+	}} class="form event-form">
 		<div class="form-group">
 			<input
 				type="text"
@@ -98,12 +100,32 @@ const { events, groups, error, success }: { events: StatusEvent[]; groups: Group
 					<span class="event-date">started {formatDate(event.startedAt)}</span>
 					<div class="event-actions">
 						{#if event.status !== "resolved"}
-							<form method="POST" action="?/resolveEvent" use:enhance>
+							<form method="POST" action="?/resolveEvent" use:enhance={() => {
+								return async ({ result, update }) => {
+									if (result.type === "success") {
+										notifications.success("event resolved");
+										await update();
+									} else if (result.type === "failure") {
+										const error = result.data?.eventError as string | undefined;
+										notifications.error(error || "failed to resolve event");
+									}
+								};
+							}}>
 								<input type="hidden" name="eventId" value={event.id} />
 								<button type="submit" class="btn sm">resolve</button>
 							</form>
 						{/if}
-						<form method="POST" action="?/deleteEvent" use:enhance>
+						<form method="POST" action="?/deleteEvent" use:enhance={() => {
+							return async ({ result, update }) => {
+								if (result.type === "success") {
+									notifications.success("event deleted");
+									await update();
+								} else if (result.type === "failure") {
+									const error = result.data?.eventError as string | undefined;
+									notifications.error(error || "failed to delete event");
+								}
+							};
+						}}>
 							<input type="hidden" name="eventId" value={event.id} />
 							<button type="submit" class="btn sm danger">delete</button>
 						</form>

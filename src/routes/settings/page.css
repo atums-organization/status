@@ -8,15 +8,15 @@
 
 .tabs {
 	display: flex;
+	flex-wrap: wrap;
 	gap: var(--spacing-xs);
 	margin-bottom: var(--spacing-xl);
 	border-bottom: 1px solid var(--color-border);
 	padding-bottom: var(--spacing-xs);
-	overflow-x: auto;
 }
 
 .tab {
-	padding: var(--spacing-sm) var(--spacing-md);
+	padding: var(--spacing-xs) var(--spacing-sm);
 	background: none;
 	border: none;
 	color: var(--color-text-muted);
@@ -27,7 +27,9 @@
 	white-space: nowrap;
 	border-bottom: 2px solid transparent;
 	margin-bottom: -1px;
-	transition: color 0.15s, border-color 0.15s;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
 }
 
 .tab:hover {
@@ -392,4 +394,180 @@
 	color: var(--color-text-muted);
 	font-size: var(--text-sm);
 	margin: 0;
+}
+
+.webhook-form {
+	margin-bottom: var(--spacing-lg);
+}
+
+.webhook-form .form-row {
+	display: flex;
+	gap: var(--spacing-md);
+	margin-bottom: var(--spacing-md);
+}
+
+.webhook-form .select-group {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.webhook-form .select-group label {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+	text-transform: lowercase;
+}
+
+.webhook-form .select-group select {
+	padding: var(--spacing-sm) var(--spacing-md);
+	border: 1px solid var(--color-border);
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	cursor: pointer;
+}
+
+.webhook-form .select-group select:focus {
+	outline: none;
+	border-color: var(--color-accent);
+}
+
+.webhook-section-title {
+	margin: var(--spacing-lg) 0 var(--spacing-sm);
+	font-size: var(--text-sm);
+	font-weight: var(--font-medium);
+	color: var(--color-text-secondary);
+	text-transform: lowercase;
+}
+
+.webhooks-list {
+	display: flex;
+	flex-direction: column;
+}
+
+.webhook-item {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--spacing-md);
+	padding: var(--spacing-sm) var(--spacing-md);
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+}
+
+.webhook-item.disabled {
+	opacity: 0.5;
+}
+
+.webhook-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.webhook-header {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	margin-bottom: 2px;
+}
+
+.webhook-name {
+	font-weight: var(--font-medium);
+	color: var(--color-text);
+}
+
+.webhook-type {
+	font-size: var(--text-xs);
+	padding: 1px 6px;
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	color: var(--color-text-secondary);
+}
+
+.webhook-group {
+	font-size: var(--text-xs);
+	padding: 1px 6px;
+	background: var(--color-accent-muted);
+	border: 1px solid var(--color-accent);
+	color: var(--color-accent);
+}
+
+.webhook-url {
+	font-size: var(--text-xs);
+	color: var(--color-text-muted);
+	font-family: monospace;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	display: block;
+}
+
+.webhook-messages {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-top: 4px;
+}
+
+.webhook-message {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+}
+
+.webhook-actions {
+	display: flex;
+	gap: var(--spacing-xs);
+	flex-shrink: 0;
+}
+
+.webhook-actions form {
+	display: contents;
+}
+
+.no-webhooks {
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	margin: 0;
+}
+
+.webhook-edit-form {
+	padding: var(--spacing-md);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	border-top: none;
+	margin-bottom: var(--spacing-sm);
+}
+
+.webhook-edit-form .form-row {
+	display: flex;
+	gap: var(--spacing-md);
+	margin-bottom: var(--spacing-md);
+}
+
+.webhook-edit-form .select-group {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.webhook-edit-form .select-group label {
+	font-size: var(--text-xs);
+	color: var(--color-text-secondary);
+	text-transform: lowercase;
+}
+
+.webhook-edit-form .select-group select {
+	padding: var(--spacing-sm) var(--spacing-md);
+	border: 1px solid var(--color-border);
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	cursor: pointer;
+}
+
+.webhook-edit-form .select-group select:focus {
+	outline: none;
+	border-color: var(--color-accent);
 }

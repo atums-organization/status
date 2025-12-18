@@ -2,7 +2,7 @@ import { fail, redirect } from "@sveltejs/kit";
 import { clearSession, getSessionId } from "$lib/server";
 import * as api from "$lib/server/api";
 import type { Actions, PageServerLoad } from "./$types";
-import type { AuditLog, Invite, SiteSettings } from "$lib";
+import type { AuditLog, Invite, SiteSettings, Webhook } from "$lib";
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
@@ -21,18 +21,20 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	let groups: Awaited<ReturnType<typeof api.getGroups>> = [];
 	let auditLogs: AuditLog[] = [];
 	let siteSettings: SiteSettings | null = null;
+	let webhooks: Webhook[] = [];
 
 	if (user.role === "admin") {
-		[invites, events, groups, auditLogs, siteSettings] = await Promise.all([
+		[invites, events, groups, auditLogs, siteSettings, webhooks] = await Promise.all([
 			api.getInvites(user.id, sessionId).catch(() => []),
 			api.getEvents({ limit: 20 }).catch(() => []),
 			api.getGroups().catch(() => []),
 			api.getAuditLogs({ limit: 50, sessionId }).catch(() => []),
 			api.getSettings().catch(() => null),
+			api.getWebhooks(sessionId).catch(() => []),
 		]);
 	}
 
-	return { user, invites, events, groups, auditLogs, siteSettings };
+	return { user, invites, events, groups, auditLogs, siteSettings, webhooks };
 };
 
 export const actions: Actions = {
@@ -251,6 +253,145 @@ export const actions: Actions = {
 		} catch (err) {
 			return fail(400, {
 				siteError: err instanceof Error ? err.message : "failed to update settings",
+			});
+		}
+	},
+
+	createWebhook: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { webhookError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const name = data.get("name")?.toString().trim();
+		const url = data.get("url")?.toString().trim();
+		const type = data.get("type")?.toString() as "discord" | "webhook";
+		const groupName = data.get("groupName")?.toString() || null;
+		const messageDown = data.get("messageDown")?.toString().trim() || "{service} is down";
+		const messageUp = data.get("messageUp")?.toString().trim() || "{service} is back up";
+		const avatarUrl = type === "discord" ? (data.get("avatarUrl")?.toString().trim() || null) : null;
+
+		if (!name) {
+			return fail(400, { webhookError: "name is required" });
+		}
+		if (!url) {
+			return fail(400, { webhookError: "url is required" });
+		}
+
+		try {
+			const webhook = await api.createWebhook({ name, url, type, groupName, messageDown, messageUp, avatarUrl }, sessionId);
+			await api.auditLog(user.id, "create", "webhook", webhook.id, { name, type, groupName }, getClientAddress(), sessionId);
+			return { webhookSuccess: "webhook created" };
+		} catch (err) {
+			return fail(400, {
+				webhookError: err instanceof Error ? err.message : "failed to create webhook",
+			});
+		}
+	},
+
+	toggleWebhook: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { webhookError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const webhookId = data.get("webhookId")?.toString();
+		const enabled = data.get("enabled")?.toString() === "true";
+
+		if (!webhookId) {
+			return fail(400, { webhookError: "webhook id required" });
+		}
+
+		try {
+			await api.updateWebhook(webhookId, { enabled }, sessionId);
+			await api.auditLog(user.id, "update", "webhook", webhookId, { enabled }, getClientAddress(), sessionId);
+			return { webhookSuccess: enabled ? "webhook enabled" : "webhook disabled" };
+		} catch (err) {
+			return fail(400, {
+				webhookError: err instanceof Error ? err.message : "failed to update webhook",
+			});
+		}
+	},
+
+	updateWebhook: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { webhookError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const webhookId = data.get("webhookId")?.toString();
+		const name = data.get("name")?.toString().trim();
+		const url = data.get("url")?.toString().trim();
+		const type = data.get("type")?.toString() as "discord" | "webhook";
+		const groupName = data.get("groupName")?.toString() || null;
+		const messageDown = data.get("messageDown")?.toString().trim();
+		const messageUp = data.get("messageUp")?.toString().trim();
+		const avatarUrl = type === "discord" ? (data.get("avatarUrl")?.toString().trim() || null) : null;
+
+		if (!webhookId) {
+			return fail(400, { webhookError: "webhook id required" });
+		}
+		if (!name) {
+			return fail(400, { webhookError: "name is required" });
+		}
+		if (!url) {
+			return fail(400, { webhookError: "url is required" });
+		}
+
+		try {
+			await api.updateWebhook(webhookId, { name, url, type, groupName, messageDown, messageUp, avatarUrl }, sessionId);
+			await api.auditLog(user.id, "update", "webhook", webhookId, { name, type, groupName }, getClientAddress(), sessionId);
+			return { webhookSuccess: "webhook updated" };
+		} catch (err) {
+			return fail(400, {
+				webhookError: err instanceof Error ? err.message : "failed to update webhook",
+			});
+		}
+	},
+
+	deleteWebhook: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { webhookError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const webhookId = data.get("webhookId")?.toString();
+
+		if (!webhookId) {
+			return fail(400, { webhookError: "webhook id required" });
+		}
+
+		try {
+			await api.deleteWebhook(webhookId, sessionId);
+			await api.auditLog(user.id, "delete", "webhook", webhookId, null, getClientAddress(), sessionId);
+			return { webhookSuccess: "webhook deleted" };
+		} catch (err) {
+			return fail(400, {
+				webhookError: err instanceof Error ? err.message : "failed to delete webhook",
 			});
 		}
 	},

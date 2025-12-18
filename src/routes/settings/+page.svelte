@@ -1,6 +1,6 @@
 <script lang="ts">
 import { UserMenu } from "$lib";
-import type { ActionData, PageData } from "./$types";
+import type { PageData } from "./$types";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import "./page.css";
@@ -11,13 +11,14 @@ import EventsSection from "./components/EventsSection.svelte";
 import AuditSection from "./components/AuditSection.svelte";
 import SessionSection from "./components/SessionSection.svelte";
 import SiteSection from "./components/SiteSection.svelte";
+import WebhooksSection from "./components/WebhooksSection.svelte";
 
-const { data, form }: { data: PageData; form: ActionData } = $props();
+const { data }: { data: PageData } = $props();
 
 const validTabs = $derived(() => {
 	const base = ["account", "security"];
 	if (data.user.role === "admin") {
-		base.push("site", "invites", "events", "audit");
+		base.push("site", "webhooks", "invites", "events", "audit");
 	}
 	return base;
 });
@@ -30,6 +31,7 @@ const tabs = $derived(() => {
 	if (data.user.role === "admin") {
 		base.push(
 			{ id: "site", label: "site" },
+			{ id: "webhooks", label: "webhooks" },
 			{ id: "invites", label: "invites" },
 			{ id: "events", label: "events" },
 			{ id: "audit", label: "audit log" },
@@ -87,13 +89,15 @@ function setTab(tab: string) {
 				<AccountSection user={data.user} />
 				<SessionSection />
 			{:else if activeTab() === "security"}
-				<PasswordSection error={form?.error} success={form?.success} />
+				<PasswordSection />
 			{:else if activeTab() === "site"}
-				<SiteSection settings={data.siteSettings} error={form?.siteError} success={form?.siteSuccess} />
+				<SiteSection settings={data.siteSettings} />
+			{:else if activeTab() === "webhooks"}
+				<WebhooksSection webhooks={data.webhooks} groups={data.groups} />
 			{:else if activeTab() === "invites"}
-				<InvitesSection invites={data.invites} error={form?.inviteError} success={form?.inviteSuccess} />
+				<InvitesSection invites={data.invites} />
 			{:else if activeTab() === "events"}
-				<EventsSection events={data.events} groups={data.groups} error={form?.eventError} success={form?.eventSuccess} />
+				<EventsSection events={data.events} groups={data.groups} />
 			{:else if activeTab() === "audit"}
 				<AuditSection logs={data.auditLogs} />
 			{/if}

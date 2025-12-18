@@ -47,11 +47,15 @@
 .group-header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	gap: var(--spacing-md);
 	border: 1px solid transparent;
 	border-radius: var(--radius-md);
 	margin-bottom: var(--spacing-sm);
 	transition: all 0.2s;
+}
+
+.group-header .group-uptime {
+	margin-left: auto;
 }
 
 .group-actions {

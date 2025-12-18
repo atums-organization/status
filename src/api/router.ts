@@ -4,26 +4,20 @@ import * as checks from "./routes/checks";
 import * as events from "./routes/events";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
+import * as settings from "./routes/settings";
 import { notFound } from "./utils/response";
 import type { Route } from "../types";
 
 const basePath = process.env.API_BASE_PATH || "";
 
-const securityTxt = `Contact: ${process.env.SECURITY_CONTACT || "security@example.com"}
-Preferred-Languages: en
-Canonical: ${process.env.SECURITY_CANONICAL || "/.well-known/security.txt"}
-`;
-
-async function getSecurityTxt(): Promise<Response> {
-	return new Response(securityTxt, {
-		headers: { "Content-Type": "text/plain; charset=utf-8" },
-	});
-}
-
 const routes: Route[] = [
 	{
 		pattern: /^\/\.well-known\/security\.txt$/,
-		handlers: { GET: getSecurityTxt },
+		handlers: { GET: settings.getSecurityTxt },
+	},
+	{
+		pattern: /^\/settings$/,
+		handlers: { GET: settings.get, PUT: settings.update },
 	},
 	{
 		pattern: /^\/auth\/login$/,

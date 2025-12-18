@@ -2,7 +2,7 @@ import { fail, redirect } from "@sveltejs/kit";
 import { clearSession, getSessionId } from "$lib/server";
 import * as api from "$lib/server/api";
 import type { Actions, PageServerLoad } from "./$types";
-import type { AuditLog, Invite } from "$lib";
+import type { AuditLog, Invite, SiteSettings } from "$lib";
 
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
@@ -20,17 +20,19 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	let events: Awaited<ReturnType<typeof api.getEvents>> = [];
 	let groups: Awaited<ReturnType<typeof api.getGroups>> = [];
 	let auditLogs: AuditLog[] = [];
+	let siteSettings: SiteSettings | null = null;
 
 	if (user.role === "admin") {
-		[invites, events, groups, auditLogs] = await Promise.all([
+		[invites, events, groups, auditLogs, siteSettings] = await Promise.all([
 			api.getInvites(user.id, sessionId).catch(() => []),
 			api.getEvents({ limit: 20 }).catch(() => []),
 			api.getGroups().catch(() => []),
 			api.getAuditLogs({ limit: 50, sessionId }).catch(() => []),
+			api.getSettings().catch(() => null),
 		]);
 	}
 
-	return { user, invites, events, groups, auditLogs };
+	return { user, invites, events, groups, auditLogs, siteSettings };
 };
 
 export const actions: Actions = {
@@ -217,6 +219,38 @@ export const actions: Actions = {
 		} catch (err) {
 			return fail(400, {
 				eventError: err instanceof Error ? err.message : "failed to delete event",
+			});
+		}
+	},
+
+	updateSiteSettings: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { siteError: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const settings = {
+			siteName: data.get("siteName")?.toString() || "",
+			siteUrl: data.get("siteUrl")?.toString() || "",
+			sourceUrl: data.get("sourceUrl")?.toString() || "",
+			discordUrl: data.get("discordUrl")?.toString() || "",
+			securityContact: data.get("securityContact")?.toString() || "",
+			securityCanonical: data.get("securityCanonical")?.toString() || "",
+		};
+
+		try {
+			await api.updateSettings(settings, sessionId);
+			await api.auditLog(user.id, "update", "settings", "site", settings, getClientAddress(), sessionId);
+			return { siteSuccess: "settings updated" };
+		} catch (err) {
+			return fail(400, {
+				siteError: err instanceof Error ? err.message : "failed to update settings",
 			});
 		}
 	},

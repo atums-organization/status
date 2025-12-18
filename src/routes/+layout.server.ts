@@ -1,11 +1,21 @@
-import { env } from "$env/dynamic/public";
+import { getSettings } from "$lib/server/api";
 import type { LayoutServerLoad } from "./$types";
 
 export const load: LayoutServerLoad = async () => {
-	const siteName = env.PUBLIC_SITE_NAME || "atums/status";
-	const siteUrl = env.PUBLIC_SITE_URL || "";
-	const sourceUrl = env.PUBLIC_SOURCE_URL || "";
-	const discordUrl = env.PUBLIC_DISCORD_URL || "";
+	let siteName = "atums/status";
+	let siteUrl = "";
+	let sourceUrl = "";
+	let discordUrl = "";
+
+	try {
+		const settings = await getSettings();
+		siteName = settings.siteName || "atums/status";
+		siteUrl = settings.siteUrl || "";
+		sourceUrl = settings.sourceUrl || "";
+		discordUrl = settings.discordUrl || "";
+	} catch {
+		// defaults if api kills itself
+	}
 
 	const parts = siteName.split("/");
 	const brand = parts[0] || siteName;

@@ -5,3 +5,4 @@ export * from "./groups";
 export * from "./invites";
 export * from "./events";
 export * from "./audit";
+export * from "./settings";

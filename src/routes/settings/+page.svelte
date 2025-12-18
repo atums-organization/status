@@ -10,13 +10,14 @@ import InvitesSection from "./components/InvitesSection.svelte";
 import EventsSection from "./components/EventsSection.svelte";
 import AuditSection from "./components/AuditSection.svelte";
 import SessionSection from "./components/SessionSection.svelte";
+import SiteSection from "./components/SiteSection.svelte";
 
 const { data, form }: { data: PageData; form: ActionData } = $props();
 
 const validTabs = $derived(() => {
 	const base = ["account", "security"];
 	if (data.user.role === "admin") {
-		base.push("invites", "events", "audit");
+		base.push("site", "invites", "events", "audit");
 	}
 	return base;
 });
@@ -28,6 +29,7 @@ const tabs = $derived(() => {
 	];
 	if (data.user.role === "admin") {
 		base.push(
+			{ id: "site", label: "site" },
 			{ id: "invites", label: "invites" },
 			{ id: "events", label: "events" },
 			{ id: "audit", label: "audit log" },
@@ -86,6 +88,8 @@ function setTab(tab: string) {
 				<SessionSection />
 			{:else if activeTab() === "security"}
 				<PasswordSection error={form?.error} success={form?.success} />
+			{:else if activeTab() === "site"}
+				<SiteSection settings={data.siteSettings} error={form?.siteError} success={form?.siteSuccess} />
 			{:else if activeTab() === "invites"}
 				<InvitesSection invites={data.invites} error={form?.inviteError} success={form?.inviteSuccess} />
 			{:else if activeTab() === "events"}

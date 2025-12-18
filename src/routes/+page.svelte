@@ -495,9 +495,9 @@
 					class="nav-link">source</a
 				>
 			{/if}
-			{#if data.discordUrl}
+			{#if data.site.discordUrl}
 				<a
-					href={data.discordUrl}
+					href={data.site.discordUrl}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="nav-link">discord</a

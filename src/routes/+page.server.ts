@@ -76,7 +76,6 @@ function calculateEmbed(
 export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
 	const timezone = env.PUBLIC_TIMEZONE || "UTC";
-	const discordUrl = env.PUBLIC_DISCORD_URL || null;
 
 	if (!sessionId) {
 		const [services, groups] = await Promise.all([
@@ -92,7 +91,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 					])
 				: [{}, {}];
 		const embed = calculateEmbed(services, checks, uptime);
-		return { user: null, services, checks, groups, uptime, timezone, discordUrl, embed };
+		return { user: null, services, checks, groups, uptime, timezone, embed };
 	}
 
 	const user = await api.getUserById(sessionId, sessionId);
@@ -111,7 +110,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 					])
 				: [{}, {}];
 		const embed = calculateEmbed(services, checks, uptime);
-		return { user: null, services, checks, groups, uptime, timezone, discordUrl, embed };
+		return { user: null, services, checks, groups, uptime, timezone, embed };
 	}
 
 	const [services, groups] = await Promise.all([
@@ -136,7 +135,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	}
 	const embed = calculateEmbed(publicServices, publicChecks, publicUptime);
 
-	return { user, services, checks, groups, uptime, timezone, discordUrl, embed };
+	return { user, services, checks, groups, uptime, timezone, embed };
 };
 
 export const actions: Actions = {

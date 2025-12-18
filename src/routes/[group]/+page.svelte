@@ -246,8 +246,8 @@ function formatGraphDate(date: string): string {
 			{#if data.site.sourceUrl}
 				<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
 			{/if}
-			{#if data.discordUrl}
-				<a href={data.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
+			{#if data.site.discordUrl}
+				<a href={data.site.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
 			{/if}
 		</nav>
 		{#if data.user}

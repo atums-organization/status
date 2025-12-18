@@ -1,5 +1,6 @@
 <script lang="ts">
 import { UserMenu } from "$lib";
+import favicon from "$lib/assets/favicon.svg";
 import type { PageData } from "./$types";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
@@ -14,6 +15,8 @@ import SiteSection from "./components/SiteSection.svelte";
 import WebhooksSection from "./components/WebhooksSection.svelte";
 
 const { data }: { data: PageData } = $props();
+
+const siteIcon = $derived(data.site.icon || favicon);
 
 const validTabs = $derived(() => {
 	const base = ["account", "security"];
@@ -55,17 +58,22 @@ function setTab(tab: string) {
 
 <div class="container">
 	<header class="header">
-		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
-		<nav class="nav">
-			<a href="/" class="nav-link">index</a>
-			{#if data.site.sourceUrl}
-				<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
-			{/if}
-			{#if data.site.discordUrl}
-				<a href={data.site.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
-			{/if}
-		</nav>
-		<UserMenu user={data.user} />
+		<div class="header-left">
+			<img src={siteIcon} alt="" class="site-icon" />
+			<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
+			<nav class="nav">
+				<a href="/" class="nav-link">index</a>
+				{#if data.site.sourceUrl}
+					<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+				{/if}
+				{#if data.site.discordUrl}
+					<a href={data.site.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
+				{/if}
+			</nav>
+		</div>
+		<div class="header-actions">
+			<UserMenu user={data.user} />
+		</div>
 	</header>
 
 	<main class="main narrow">

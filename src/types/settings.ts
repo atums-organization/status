@@ -6,4 +6,12 @@ export interface SiteSettings {
 	discordUrl: string;
 	securityContact: string;
 	securityCanonical: string;
+	smtpHost: string;
+	smtpPort: string;
+	smtpUser: string;
+	smtpPass: string;
+	smtpFrom: string;
+	smtpSecure: boolean;
+	smtpEnabled: boolean;
+	emailTo: string;
 }

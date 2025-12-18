@@ -219,6 +219,7 @@ export const actions: Actions = {
 		);
 		const enabled = formData.get("enabled") === "on";
 		const isPublic = formData.get("isPublic") === "on";
+		const emailNotifications = formData.get("emailNotifications") === "on";
 		const groupName = formData.get("groupName")?.toString().trim() || null;
 
 		if (!serviceId) return fail(400, { editError: "Service ID required" });
@@ -251,6 +252,7 @@ export const actions: Actions = {
 			checkInterval,
 			enabled,
 			isPublic,
+			emailNotifications,
 			groupName,
 		}, sessionId);
 		await api.auditLog(user.id, "update", "service", serviceId, { name, url, enabled, isPublic }, getClientAddress(), sessionId);
@@ -289,6 +291,7 @@ export const actions: Actions = {
 		);
 		const enabled = formData.get("enabled") === "on";
 		const isPublic = formData.get("isPublic") === "on";
+		const emailNotifications = formData.get("emailNotifications") === "on";
 		const groupName = formData.get("groupName")?.toString().trim() || null;
 
 		if (!name) return fail(400, { createError: "Name is required" });
@@ -310,6 +313,7 @@ export const actions: Actions = {
 				checkInterval,
 				enabled,
 				isPublic,
+				emailNotifications,
 				groupName,
 			});
 			await api.auditLog(user.id, "create", "service", service.id, { name, url, enabled, isPublic }, getClientAddress(), sessionId);
@@ -423,6 +427,37 @@ export const actions: Actions = {
 			return { success: true, deleted: true };
 		} catch (err) {
 			return fail(400, { error: err instanceof Error ? err.message : "Failed to delete group" });
+		}
+	},
+
+	toggleGroupEmail: async ({ cookies, request, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) return fail(401, { error: "Unauthorized" });
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			clearSession(cookies);
+			return fail(401, { error: "Unauthorized" });
+		}
+
+		if (user.role !== "admin") {
+			return fail(403, { error: "Admin access required" });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get("name")?.toString().trim();
+		const emailNotifications = formData.get("emailNotifications")?.toString() === "true";
+
+		if (!name) {
+			return fail(400, { error: "Group name is required" });
+		}
+
+		try {
+			await api.updateGroupEmail(name, emailNotifications, sessionId);
+			await api.auditLog(user.id, "update", "group", name, { emailNotifications }, getClientAddress(), sessionId);
+			return { success: true };
+		} catch (err) {
+			return fail(400, { error: err instanceof Error ? err.message : "Failed to update group email" });
 		}
 	},
 };

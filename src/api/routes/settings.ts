@@ -1,16 +1,10 @@
 import { sql } from "../index";
+import type { SiteSettings } from "../../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden } from "../utils/response";
+import { sendTestEmail as sendTest } from "../utils/email";
 
-export interface SiteSettings {
-	siteName: string;
-	siteIcon: string;
-	siteUrl: string;
-	sourceUrl: string;
-	discordUrl: string;
-	securityContact: string;
-	securityCanonical: string;
-}
+export type { SiteSettings };
 
 export async function getSettings(): Promise<SiteSettings> {
 	const rows = await sql`SELECT key, value FROM settings`;
@@ -28,6 +22,14 @@ export async function getSettings(): Promise<SiteSettings> {
 		discordUrl: map.discord_url || "",
 		securityContact: map.security_contact || "",
 		securityCanonical: map.security_canonical || "/.well-known/security.txt",
+		smtpHost: map.smtp_host || "",
+		smtpPort: map.smtp_port || "587",
+		smtpUser: map.smtp_user || "",
+		smtpPass: map.smtp_pass || "",
+		smtpFrom: map.smtp_from || "",
+		smtpSecure: map.smtp_secure === "true",
+		smtpEnabled: map.smtp_enabled === "true",
+		emailTo: map.email_to || "",
 	};
 }
 
@@ -46,7 +48,23 @@ export async function update(req: Request): Promise<Response> {
 	}
 
 	const body = await req.json();
-	const { siteName, siteIcon, siteUrl, sourceUrl, discordUrl, securityContact, securityCanonical } = body;
+	const {
+		siteName,
+		siteIcon,
+		siteUrl,
+		sourceUrl,
+		discordUrl,
+		securityContact,
+		securityCanonical,
+		smtpHost,
+		smtpPort,
+		smtpUser,
+		smtpPass,
+		smtpFrom,
+		smtpSecure,
+		smtpEnabled,
+		emailTo,
+	} = body;
 
 	const updates: Array<{ key: string; value: string }> = [];
 
@@ -82,6 +100,30 @@ export async function update(req: Request): Promise<Response> {
 	if (typeof securityCanonical === "string") {
 		updates.push({ key: "security_canonical", value: securityCanonical });
 	}
+	if (typeof smtpHost === "string") {
+		updates.push({ key: "smtp_host", value: smtpHost });
+	}
+	if (typeof smtpPort === "string") {
+		updates.push({ key: "smtp_port", value: smtpPort });
+	}
+	if (typeof smtpUser === "string") {
+		updates.push({ key: "smtp_user", value: smtpUser });
+	}
+	if (typeof smtpPass === "string") {
+		updates.push({ key: "smtp_pass", value: smtpPass });
+	}
+	if (typeof smtpFrom === "string") {
+		updates.push({ key: "smtp_from", value: smtpFrom });
+	}
+	if (typeof smtpSecure === "boolean") {
+		updates.push({ key: "smtp_secure", value: String(smtpSecure) });
+	}
+	if (typeof smtpEnabled === "boolean") {
+		updates.push({ key: "smtp_enabled", value: String(smtpEnabled) });
+	}
+	if (typeof emailTo === "string") {
+		updates.push({ key: "email_to", value: emailTo });
+	}
 
 	if (updates.length === 0) {
 		return badRequest("No valid settings provided");
@@ -108,4 +150,21 @@ Canonical: ${settings.securityCanonical || "/.well-known/security.txt"}
 	return new Response(content, {
 		headers: { "Content-Type": "text/plain; charset=utf-8" },
 	});
+}
+
+export async function testEmail(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
+	const result = await sendTest();
+
+	if (result.success) {
+		return ok({ message: "Test email sent successfully" });
+	}
+	return badRequest(result.error || "Failed to send test email");
 }

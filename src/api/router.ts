@@ -26,6 +26,10 @@ const routes: Route[] = [
 		handlers: { GET: settings.get, PUT: settings.update },
 	},
 	{
+		pattern: /^\/settings\/test-email$/,
+		handlers: { POST: settings.testEmail },
+	},
+	{
 		pattern: /^\/auth\/login$/,
 		handlers: { POST: auth.login },
 	},
@@ -84,6 +88,10 @@ const routes: Route[] = [
 	{
 		pattern: /^\/groups\/delete$/,
 		handlers: { DELETE: services.deleteGroup },
+	},
+	{
+		pattern: /^\/groups\/email$/,
+		handlers: { PUT: services.updateGroupEmailNotifications },
 	},
 	{
 		pattern: /^\/checks\/service\/([^/]+)$/,

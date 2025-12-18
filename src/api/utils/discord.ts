@@ -51,7 +51,7 @@ export async function sendServiceDown(
 			const message = formatMessage(webhook.messageDown, serviceName);
 
 			const discordPayload: DiscordPayload = {
-				username: webhook.name,
+				username: siteName,
 				...(webhook.avatarUrl && { avatar_url: webhook.avatarUrl }),
 				embeds: [
 					{
@@ -67,7 +67,6 @@ export async function sendServiceDown(
 								: []),
 						],
 						timestamp: new Date().toISOString(),
-						footer: { text: siteName },
 					},
 				],
 			};
@@ -103,7 +102,7 @@ export async function sendServiceUp(
 			const message = formatMessage(webhook.messageUp, serviceName);
 
 			const discordPayload: DiscordPayload = {
-				username: webhook.name,
+				username: siteName,
 				...(webhook.avatarUrl && { avatar_url: webhook.avatarUrl }),
 				embeds: [
 					{
@@ -114,7 +113,6 @@ export async function sendServiceUp(
 							{ name: "response time", value: `${responseTime}ms`, inline: true },
 						],
 						timestamp: new Date().toISOString(),
-						footer: { text: siteName },
 					},
 				],
 			};

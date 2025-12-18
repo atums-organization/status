@@ -237,15 +237,25 @@ export const actions: Actions = {
 		}
 
 		const data = await request.formData();
-		const settings = {
-			siteName: data.get("siteName")?.toString() || "",
-			siteIcon: data.get("siteIcon")?.toString() || "",
-			siteUrl: data.get("siteUrl")?.toString() || "",
-			sourceUrl: data.get("sourceUrl")?.toString() || "",
-			discordUrl: data.get("discordUrl")?.toString() || "",
-			securityContact: data.get("securityContact")?.toString() || "",
-			securityCanonical: data.get("securityCanonical")?.toString() || "",
-		};
+		const settings: Record<string, string | boolean> = {};
+
+		if (data.has("siteName")) settings.siteName = data.get("siteName")?.toString() || "";
+		if (data.has("siteIcon")) settings.siteIcon = data.get("siteIcon")?.toString() || "";
+		if (data.has("siteUrl")) settings.siteUrl = data.get("siteUrl")?.toString() || "";
+		if (data.has("sourceUrl")) settings.sourceUrl = data.get("sourceUrl")?.toString() || "";
+		if (data.has("discordUrl")) settings.discordUrl = data.get("discordUrl")?.toString() || "";
+		if (data.has("securityContact")) settings.securityContact = data.get("securityContact")?.toString() || "";
+		if (data.has("securityCanonical")) settings.securityCanonical = data.get("securityCanonical")?.toString() || "";
+		if (data.has("smtpHost")) settings.smtpHost = data.get("smtpHost")?.toString() || "";
+		if (data.has("smtpPort")) settings.smtpPort = data.get("smtpPort")?.toString() || "587";
+		if (data.has("smtpUser")) settings.smtpUser = data.get("smtpUser")?.toString() || "";
+		if (data.has("smtpPass")) settings.smtpPass = data.get("smtpPass")?.toString() || "";
+		if (data.has("smtpFrom")) settings.smtpFrom = data.get("smtpFrom")?.toString() || "";
+		if (data.has("_emailForm")) {
+			settings.smtpSecure = data.get("smtpSecure") === "on";
+			settings.smtpEnabled = data.get("smtpEnabled") === "on";
+		}
+		if (data.has("emailTo")) settings.emailTo = data.get("emailTo")?.toString() || "";
 
 		try {
 			await api.updateSettings(settings, sessionId);
@@ -393,6 +403,27 @@ export const actions: Actions = {
 		} catch (err) {
 			return fail(400, {
 				webhookError: err instanceof Error ? err.message : "failed to delete webhook",
+			});
+		}
+	},
+
+	testEmail: async ({ cookies }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user || user.role !== "admin") {
+			return fail(403, { emailError: "not authorized" });
+		}
+
+		try {
+			await api.sendTestEmail(sessionId);
+			return { emailSuccess: "test email sent" };
+		} catch (err) {
+			return fail(400, {
+				emailError: err instanceof Error ? err.message : "failed to send test email",
 			});
 		}
 	},

@@ -3,7 +3,18 @@ import type { Service, ServiceCheck } from "../types";
 import { getAuthContext, requireAuth } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 import { sendServiceDown, sendServiceUp } from "../utils/discord";
+import { sendServiceDownEmail, sendServiceUpEmail } from "../utils/email";
 import { broadcastCheck } from "../utils/sse";
+
+async function isGroupEmailEnabled(groupName: string | null): Promise<boolean> {
+	if (!groupName) return false;
+	const rows = await sql`SELECT email_notifications FROM groups WHERE name = ${groupName}`;
+	return rows.length > 0 && rows[0].email_notifications === true;
+}
+
+function isServiceEmailEnabled(service: Service): boolean {
+	return service.emailNotifications === true;
+}
 
 function rowToCheck(row: Record<string, unknown>): ServiceCheck {
 	return {
@@ -30,6 +41,7 @@ function rowToService(row: Record<string, unknown>): Service {
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
 		isPublic: row.is_public as boolean,
+		emailNotifications: (row.email_notifications as boolean) || false,
 		groupName: row.group_name as string | null,
 		position: (row.position as number) || 0,
 		createdBy: row.created_by as string,
@@ -136,11 +148,38 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 	if (previousStatus !== undefined && previousStatus !== success) {
 		if (success) {
 			sendServiceUp(service.name, service.displayUrl || service.url, service.groupName, responseTime).catch(() => {});
+			if (isServiceEmailEnabled(service)) {
+				sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
+			} else {
+				isGroupEmailEnabled(service.groupName).then((enabled) => {
+					if (enabled) {
+						sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
+					}
+				});
+			}
 		} else {
 			sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
+			if (isServiceEmailEnabled(service)) {
+				sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+			} else {
+				isGroupEmailEnabled(service.groupName).then((enabled) => {
+					if (enabled) {
+						sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+					}
+				});
+			}
 		}
 	} else if (previousStatus === undefined && !success) {
 		sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
+		if (isServiceEmailEnabled(service)) {
+			sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+		} else {
+			isGroupEmailEnabled(service.groupName).then((enabled) => {
+				if (enabled) {
+					sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+				}
+			});
+		}
 	}
 
 	const check: ServiceCheck = {

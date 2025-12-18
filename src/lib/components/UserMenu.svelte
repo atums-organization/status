@@ -74,6 +74,7 @@
 		border: 1px solid var(--color-border);
 		color: var(--color-text-secondary);
 		font-size: var(--text-sm);
+		line-height: 1.5;
 		cursor: pointer;
 		transition: all var(--transition-fast);
 	}

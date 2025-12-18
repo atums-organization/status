@@ -48,3 +48,16 @@ export async function deleteGroup(
 		sessionId,
 	});
 }
+
+export async function updateGroupEmail(
+	name: string,
+	emailNotifications: boolean,
+	sessionId?: string,
+): Promise<Group> {
+	const result = await request<{ group: Group }>("/groups/email", {
+		method: "PUT",
+		body: JSON.stringify({ name, emailNotifications }),
+		sessionId,
+	});
+	return result.group;
+}

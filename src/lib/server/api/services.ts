@@ -41,6 +41,7 @@ export async function createService(
 		checkInterval?: number;
 		enabled?: boolean;
 		isPublic?: boolean;
+		emailNotifications?: boolean;
 		groupName?: string | null;
 	},
 ): Promise<Service> {
@@ -65,6 +66,7 @@ export async function updateService(
 		checkInterval?: number;
 		enabled?: boolean;
 		isPublic?: boolean;
+		emailNotifications?: boolean;
 		groupName?: string | null;
 	},
 	sessionId?: string,

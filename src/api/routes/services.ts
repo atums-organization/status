@@ -16,6 +16,7 @@ function rowToService(row: Record<string, unknown>): Service {
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
 		isPublic: row.is_public as boolean,
+		emailNotifications: (row.email_notifications as boolean) || false,
 		groupName: row.group_name as string | null,
 		position: (row.position as number) || 0,
 		createdBy: row.created_by as string,
@@ -29,6 +30,7 @@ function rowToGroup(row: Record<string, unknown>): Group {
 		id: row.id as string,
 		name: row.name as string,
 		position: (row.position as number) || 0,
+		emailNotifications: (row.email_notifications as boolean) || false,
 		createdAt: row.created_at as string,
 	};
 }
@@ -40,7 +42,7 @@ export async function list(req: Request): Promise<Response> {
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		ORDER BY position ASC, created_at ASC
 	`;
@@ -50,7 +52,7 @@ export async function list(req: Request): Promise<Response> {
 
 export async function listPublic(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE is_public = true AND enabled = true
 		ORDER BY position ASC, created_at ASC
@@ -79,7 +81,7 @@ export async function listByUser(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE created_by = ${userId}
 		ORDER BY position ASC, created_at ASC
@@ -99,7 +101,7 @@ export async function get(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -141,6 +143,7 @@ export async function create(req: Request): Promise<Response> {
 		checkInterval = 60,
 		enabled = true,
 		isPublic = false,
+		emailNotifications = false,
 		groupName = null,
 		position,
 	} = body;
@@ -162,12 +165,12 @@ export async function create(req: Request): Promise<Response> {
 	const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
 
 	await sql`
-		INSERT INTO services (id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by)
-		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${expectedContentType}, ${expectedBody}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${nextPosition}, ${createdBy})
+		INSERT INTO services (id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by)
+		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${expectedContentType}, ${expectedBody}, ${checkInterval}, ${enabled}, ${isPublic}, ${emailNotifications}, ${groupName || null}, ${nextPosition}, ${createdBy})
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -211,6 +214,7 @@ export async function update(
 		checkInterval,
 		enabled,
 		isPublic,
+		emailNotifications,
 		groupName,
 		position,
 	} = body;
@@ -234,6 +238,7 @@ export async function update(
 	if (checkInterval !== undefined) updates.check_interval = checkInterval;
 	if (enabled !== undefined) updates.enabled = enabled;
 	if (isPublic !== undefined) updates.is_public = isPublic;
+	if (emailNotifications !== undefined) updates.email_notifications = emailNotifications;
 	if (groupName !== undefined) updates.group_name = groupName;
 	if (position !== undefined) updates.position = position;
 
@@ -248,7 +253,7 @@ export async function update(
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -318,7 +323,7 @@ export async function updatePositions(req: Request): Promise<Response> {
 
 export async function listGroups(): Promise<Response> {
 	const dbGroups = await sql`
-		SELECT id, name, position, created_at
+		SELECT id, name, position, email_notifications, created_at
 		FROM groups
 		ORDER BY position ASC, name ASC
 	`;
@@ -338,6 +343,7 @@ export async function listGroups(): Promise<Response> {
 				id: `service-group-${row.group_name}`,
 				name: row.group_name as string,
 				position: allGroups.length,
+				emailNotifications: false,
 				createdAt: new Date().toISOString(),
 			});
 		}
@@ -370,7 +376,7 @@ export async function upsertGroup(req: Request): Promise<Response> {
 		await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${nextPosition})`;
 	}
 
-	const rows = await sql`SELECT id, name, position, created_at FROM groups WHERE name = ${name}`;
+	const rows = await sql`SELECT id, name, position, email_notifications, created_at FROM groups WHERE name = ${name}`;
 	return ok({ group: rowToGroup(rows[0]) });
 }
 
@@ -441,12 +447,37 @@ export async function deleteGroup(req: Request): Promise<Response> {
 		return badRequest("Group name required");
 	}
 
-	const services = await sql`SELECT id FROM services WHERE group_name = ${name} LIMIT 1`;
-	if (services.length > 0) {
-		return badRequest("Cannot delete group with services. Move all services first.");
-	}
-
+	await sql`UPDATE services SET group_name = NULL WHERE group_name = ${name}`;
 	await sql`DELETE FROM groups WHERE name = ${name}`;
 
 	return noContent();
+}
+
+export async function updateGroupEmailNotifications(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
+	const body = await req.json();
+	const { name, emailNotifications } = body;
+
+	if (!name) {
+		return badRequest("Group name required");
+	}
+
+	if (typeof emailNotifications !== "boolean") {
+		return badRequest("emailNotifications must be a boolean");
+	}
+
+	const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
+	if (existing.length === 0) {
+		const id = crypto.randomUUID();
+		await sql`INSERT INTO groups (id, name, position, email_notifications) VALUES (${id}, ${name}, 0, ${emailNotifications})`;
+	} else {
+		await sql`UPDATE groups SET email_notifications = ${emailNotifications} WHERE name = ${name}`;
+	}
+
+	const rows = await sql`SELECT id, name, position, email_notifications, created_at FROM groups WHERE name = ${name}`;
+	return ok({ group: rowToGroup(rows[0]) });
 }

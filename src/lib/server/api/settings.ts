@@ -17,3 +17,10 @@ export async function updateSettings(
 	});
 	return result.settings;
 }
+
+export async function sendTestEmail(sessionId: string): Promise<{ message: string }> {
+	return request<{ message: string }>("/settings/test-email", {
+		method: "POST",
+		sessionId,
+	});
+}

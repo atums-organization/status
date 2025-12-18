@@ -9,6 +9,7 @@
 		formatShortTime as formatShortTimeUtil,
 		formatResponseTime,
 	} from "$lib";
+	import favicon from "$lib/assets/favicon.svg";
 	import { createSSEConnection } from "$lib/sse";
 	import type { ActionData, PageData } from "./$types";
 	import { enhance } from "$app/forms";
@@ -19,8 +20,12 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
+	const siteIcon = $derived(data.site.icon || favicon);
+
 	// eslint-disable-next-line svelte/prefer-writable-derived -- need mutable state for SSE updates
-	let checks = $state<Record<string, ServiceCheck | null>>({ ...data.checks });
+	let checks = $state<Record<string, ServiceCheck | null>>({
+		...data.checks,
+	});
 
 	$effect(() => {
 		checks = { ...data.checks };
@@ -34,7 +39,7 @@
 	});
 
 	$effect(() => {
-		if (selectedService) {
+		if (selectedService || editingService || creatingService) {
 			document.body.style.overflow = "hidden";
 		} else {
 			document.body.style.overflow = "";
@@ -158,6 +163,7 @@
 				id: `service-group-${name}`,
 				name,
 				position: dbGroups.length + i,
+				emailNotifications: false,
 				createdAt: new Date().toISOString(),
 			})),
 		];
@@ -213,7 +219,10 @@
 		serviceStats = null;
 
 		if (updateUrl) {
-			goto(`?modal=${service.id}`, { replaceState: false, noScroll: true });
+			goto(`?modal=${service.id}`, {
+				replaceState: false,
+				noScroll: true,
+			});
 		}
 
 		try {
@@ -294,6 +303,19 @@
 		formData.set("name", groupName);
 
 		await fetch("?/deleteGroup", {
+			method: "POST",
+			body: formData,
+		});
+
+		await invalidateAll();
+	}
+
+	async function toggleGroupEmail(groupName: string, enabled: boolean) {
+		const formData = new FormData();
+		formData.set("name", groupName);
+		formData.set("emailNotifications", String(enabled));
+
+		await fetch("?/toggleGroupEmail", {
 			method: "POST",
 			body: formData,
 		});
@@ -449,7 +471,10 @@
 
 		const maxPoints = isMobile ? 20 : 50;
 		const allChecks = [...serviceChecks].reverse();
-		const step = allChecks.length > maxPoints ? Math.ceil(allChecks.length / maxPoints) : 1;
+		const step =
+			allChecks.length > maxPoints
+				? Math.ceil(allChecks.length / maxPoints)
+				: 1;
 		const reversed = allChecks.filter((_, i) => i % step === 0);
 		const times = reversed.map((c) => c.responseTime ?? 0);
 		const maxTime = Math.max(...times);
@@ -550,47 +575,56 @@
 
 <div class="container">
 	<header class="header">
-		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
-		<nav class="nav">
-			<a href="/" class="nav-link active">index</a>
-			{#if data.site.sourceUrl}
-				<a
-					href={data.site.sourceUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="nav-link">source</a
-				>
-			{/if}
-			{#if data.site.discordUrl}
-				<a
-					href={data.site.discordUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					class="nav-link">discord</a
-				>
-			{/if}
-		</nav>
-		{#if data.user}
-			<UserMenu user={data.user} />
-		{:else}
-			<a href="/login" class="login-link">login</a>
-		{/if}
-	</header>
-
-	<main class="main centered" class:edit-mode={editMode}>
-		{#if data.user}
-			<div class="page-controls">
+		<div class="header-left">
+			<img src={siteIcon} alt="" class="site-icon" />
+			<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
+			<nav class="nav">
+				<a href="/" class="nav-link active">index</a>
+				{#if data.site.sourceUrl}
+					<a
+						href={data.site.sourceUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="nav-link">source</a
+					>
+				{/if}
+				{#if data.site.discordUrl}
+					<a
+						href={data.site.discordUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="nav-link">discord</a
+					>
+				{/if}
+			</nav>
+		</div>
+		<div class="header-actions">
+			{#if data.user}
+				{#if editMode}
+					<button
+						type="button"
+						class="btn sm"
+						onclick={() => openCreateModal(null)}
+					>
+						+ add
+					</button>
+				{/if}
 				<button
 					type="button"
-					class="btn"
+					class="btn sm edit-btn"
 					class:primary={editMode}
 					onclick={() => (editMode = !editMode)}
 				>
-					{editMode ? "close" : "edit"}
+					{editMode ? "done" : "edit"}
 				</button>
-			</div>
-		{/if}
+				<UserMenu user={data.user} />
+			{:else}
+				<a href="/login" class="login-link">login</a>
+			{/if}
+		</div>
+	</header>
 
+	<main class="main centered" class:edit-mode={editMode}>
 		{#if !data.services?.length}
 			<div class="empty">
 				{#if data.user}
@@ -627,26 +661,6 @@
 				{#if services.length > 0 || editMode}
 					<div class="service-group">
 						<div class="group-header">
-							{#if editMode}
-								<div class="group-reorder">
-									<button
-										type="button"
-										class="reorder-btn"
-										disabled={groupIndex === 0}
-										onclick={() => moveGroupUp(group.name)}
-										title="Move up">&#9650;</button
-									>
-									<button
-										type="button"
-										class="reorder-btn"
-										disabled={groupIndex ===
-											sortedGroups.length - 1}
-										onclick={() =>
-											moveGroupDown(group.name)}
-										title="Move down">&#9660;</button
-									>
-								</div>
-							{/if}
 							{#if editingGroupName === group.name}
 								<div class="group-rename-form">
 									<input
@@ -654,30 +668,85 @@
 										bind:value={newGroupName}
 										class="group-rename-input"
 										onkeydown={(e) => {
-											if (e.key === "Enter") saveGroupName();
-											if (e.key === "Escape") closeRenameGroup();
+											if (e.key === "Enter")
+												saveGroupName();
+											if (e.key === "Escape")
+												closeRenameGroup();
 										}}
 									/>
-									<button type="button" class="btn sm" onclick={saveGroupName}>save</button>
-									<button type="button" class="btn sm" onclick={closeRenameGroup}>cancel</button>
-								</div>
-							{:else}
-								<a href="/{encodeURIComponent(group.name)}"
-									><h2 class="group-title">{group.name}</h2></a
-								>
-								{#if editMode}
 									<button
 										type="button"
 										class="btn sm"
-										onclick={() => openRenameGroup(group.name)}
-									>rename</button>
-									{#if services.length === 0}
+										onclick={saveGroupName}>save</button
+									>
+									<button
+										type="button"
+										class="btn sm"
+										onclick={closeRenameGroup}
+										>cancel</button
+									>
+								</div>
+							{:else}
+								<a href="/{encodeURIComponent(group.name)}"
+									><h2 class="group-title">
+										{group.name}
+									</h2></a
+								>
+								{#if editMode}
+									<div class="group-actions">
+										<button
+											type="button"
+											class="btn sm"
+											onclick={() => openCreateModal(group.name)}
+											>+ add</button
+										>
+										<button
+											type="button"
+											class="btn sm"
+											disabled={groupIndex === 0}
+											onclick={() => moveGroupUp(group.name)}
+											title="Move up">▲</button
+										>
+										<button
+											type="button"
+											class="btn sm"
+											disabled={groupIndex === sortedGroups.length - 1}
+											onclick={() => moveGroupDown(group.name)}
+											title="Move down">▼</button
+										>
+										<button
+											type="button"
+											class="btn sm"
+											onclick={() =>
+												openRenameGroup(group.name)}
+											>rename</button
+										>
+										{#if data.user?.role === "admin"}
+											<button
+												type="button"
+												class="btn sm"
+												class:active={group.emailNotifications}
+												onclick={() =>
+													toggleGroupEmail(
+														group.name,
+														!group.emailNotifications,
+													)}
+												title={group.emailNotifications
+													? "Disable email notifications"
+													: "Enable email notifications"}
+												>{group.emailNotifications
+													? "email on"
+													: "email off"}</button
+											>
+										{/if}
 										<button
 											type="button"
 											class="btn sm danger"
-											onclick={() => deleteGroup(group.name)}
-										>delete</button>
-									{/if}
+											onclick={() =>
+												deleteGroup(group.name)}
+											>delete</button
+										>
+									</div>
 								{/if}
 							{/if}
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
@@ -712,112 +781,114 @@
 								{@const check = checks[service.id]}
 								{@const serviceUptime =
 									data.uptime?.[service.id]}
-								<div
-									class="service-card"
-									class:dragging={draggedService?.id ===
-										service.id}
-									draggable={editMode}
-									ondragstart={(e) =>
-										handleServiceDragStart(e, service)}
-									ondragend={handleServiceDragEnd}
-									ondragover={(e) => {
-										if (
-											draggedService &&
-											draggedService.id !== service.id
-										)
-											e.preventDefault();
-									}}
-									ondrop={(e) =>
-										handleServiceDrop(
-											e,
-											service,
-											group.name,
-										)}
-									onclick={() => openServiceDetail(service)}
-									onkeydown={(e) =>
-										e.key === "Enter" &&
-										openServiceDetail(service)}
-									role="button"
-									tabindex="0"
-								>
-									{#if serviceUptime && serviceUptime.totalChecks > 0}
-										<span
-											class="service-uptime"
-											class:is-success={serviceUptime.uptimePercent >=
-												90}
-											class:is-warning={serviceUptime.uptimePercent >=
-												75 &&
-												serviceUptime.uptimePercent <
+								<div class="service-item" class:edit-mode={editMode}>
+									<div
+										class="service-card"
+										class:dragging={draggedService?.id ===
+											service.id}
+										draggable={editMode}
+										ondragstart={(e) =>
+											handleServiceDragStart(e, service)}
+										ondragend={handleServiceDragEnd}
+										ondragover={(e) => {
+											if (
+												draggedService &&
+												draggedService.id !== service.id
+											)
+												e.preventDefault();
+										}}
+										ondrop={(e) =>
+											handleServiceDrop(
+												e,
+												service,
+												group.name,
+											)}
+										onclick={() => openServiceDetail(service)}
+										onkeydown={(e) =>
+											e.key === "Enter" &&
+											openServiceDetail(service)}
+										role="button"
+										tabindex="0"
+									>
+										{#if serviceUptime && serviceUptime.totalChecks > 0}
+											<span
+												class="service-uptime"
+												class:is-success={serviceUptime.uptimePercent >=
 													90}
-											class:is-error={serviceUptime.uptimePercent <
-												75}
-											>{serviceUptime.uptimePercent.toFixed(
-												1,
-											)}%</span
-										>
-									{/if}
-									<div class="service-info">
-										<div class="service-header">
-											<h3>{service.name}</h3>
-											{#if data.user && !service.isPublic}
-												<span
-													class="visibility-badge private"
-													>private</span
-												>
-											{/if}
-										</div>
-										<a
-											href={service.displayUrl ||
-												service.url}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="url"
-											onclick={(e) => e.stopPropagation()}
-											>{service.displayUrl ||
-												service.url}</a
-										>
-										<div class="meta">
-											{#if check}
-												<span class="response-time"
-													>{formatTime(
-														check.responseTime,
-													)}</span
-												>
-												<span
-													class="status-code"
-													class:success={check.success}
-													class:error={!check.success}
-													>{check.statusCode ??
-														"error"}</span
-												>
-												<span class="last-check"
-													>checked {formatDate(
-														check.checkedAt,
-													)}</span
-												>
-											{:else}
-												<span class="pending-text"
-													>pending first check</span
-												>
-											{/if}
-										</div>
-										{#if service.description}
-											{#if service.description.startsWith("http://") || service.description.startsWith("https://")}
-												<a
-													href={service.description}
-													target="_blank"
-													rel="noopener noreferrer"
-													class="description description-link"
-													onclick={(e) =>
-														e.stopPropagation()}
-													>{service.description}</a
-												>
-											{:else}
-												<p class="description">
-													{service.description}
-												</p>
-											{/if}
+												class:is-warning={serviceUptime.uptimePercent >=
+													75 &&
+													serviceUptime.uptimePercent <
+														90}
+												class:is-error={serviceUptime.uptimePercent <
+													75}
+												>{serviceUptime.uptimePercent.toFixed(
+													1,
+												)}%</span
+											>
 										{/if}
+										<div class="service-info">
+											<div class="service-header">
+												<h3>{service.name}</h3>
+												{#if data.user && !service.isPublic}
+													<span
+														class="visibility-badge private"
+														>private</span
+													>
+												{/if}
+											</div>
+											<a
+												href={service.displayUrl ||
+													service.url}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="url"
+												onclick={(e) => e.stopPropagation()}
+												>{service.displayUrl ||
+													service.url}</a
+											>
+											<div class="meta">
+												{#if check}
+													<span class="response-time"
+														>{formatTime(
+															check.responseTime,
+														)}</span
+													>
+													<span
+														class="status-code"
+														class:success={check.success}
+														class:error={!check.success}
+														>{check.statusCode ??
+															"error"}</span
+													>
+													<span class="last-check"
+														>checked {formatDate(
+															check.checkedAt,
+														)}</span
+													>
+												{:else}
+													<span class="pending-text"
+														>pending first check</span
+													>
+												{/if}
+											</div>
+											{#if service.description}
+												{#if service.description.startsWith("http://") || service.description.startsWith("https://")}
+													<a
+														href={service.description}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="description description-link"
+														onclick={(e) =>
+															e.stopPropagation()}
+														>{service.description}</a
+													>
+												{:else}
+													<p class="description">
+														{service.description}
+													</p>
+												{/if}
+											{/if}
+										</div>
 									</div>
 									{#if editMode}
 										<div class="service-actions">
@@ -843,8 +914,6 @@
 												<button
 													type="submit"
 													class="btn sm danger"
-													onclick={(e) =>
-														e.stopPropagation()}
 													>delete</button
 												>
 											</form>
@@ -853,15 +922,6 @@
 								</div>
 							{/each}
 						</div>
-						{#if editMode}
-							<button
-								type="button"
-								class="btn add-service-btn"
-								onclick={() => openCreateModal(group.name)}
-							>
-								+ add service to {group.name}
-							</button>
-						{/if}
 					</div>
 				{/if}
 			{/each}
@@ -882,99 +942,100 @@
 					{#each groupedServices.ungrouped as service (service.id)}
 						{@const check = checks[service.id]}
 						{@const serviceUptime = data.uptime?.[service.id]}
-						<div
-							class="service-card"
-							class:dragging={draggedService?.id === service.id}
-							draggable={editMode}
-							ondragstart={(e) =>
-								handleServiceDragStart(e, service)}
-							ondragend={handleServiceDragEnd}
-							ondragover={(e) => {
-								if (
-									draggedService &&
-									draggedService.id !== service.id
-								)
-									e.preventDefault();
-							}}
-							ondrop={(e) => handleServiceDrop(e, service, null)}
-							onclick={() => openServiceDetail(service)}
-							onkeydown={(e) =>
-								e.key === "Enter" && openServiceDetail(service)}
-							role="button"
-							tabindex="0"
-						>
-							{#if serviceUptime && serviceUptime.totalChecks > 0}
-								<span
-									class="service-uptime"
-									class:is-success={serviceUptime.uptimePercent >=
-										90}
-									class:is-warning={serviceUptime.uptimePercent >=
-										75 &&
-										serviceUptime.uptimePercent < 90}
-									class:is-error={serviceUptime.uptimePercent <
-										75}
-									>{serviceUptime.uptimePercent.toFixed(
-										1,
-									)}%</span
-								>
-							{/if}
-							<div class="service-info">
-								<div class="service-header">
-									<h3>{service.name}</h3>
-									{#if data.user && !service.isPublic}
-										<span class="visibility-badge private"
-											>private</span
-										>
-									{/if}
-								</div>
-								<a
-									href={service.displayUrl || service.url}
-									target="_blank"
-									rel="noopener noreferrer"
-									class="url"
-									onclick={(e) => e.stopPropagation()}
-									>{service.displayUrl || service.url}</a
-								>
-								<div class="meta">
-									{#if check}
-										<span class="response-time"
-											>{formatTime(
-												check.responseTime,
-											)}</span
-										>
-										<span
-											class="status-code"
-											class:success={check.success}
-											class:error={!check.success}
-											>{check.statusCode ?? "error"}</span
-										>
-										<span class="last-check"
-											>checked {formatDate(
-												check.checkedAt,
-											)}</span
-										>
-									{:else}
-										<span class="pending-text"
-											>pending first check</span
-										>
-									{/if}
-								</div>
-								{#if service.description}
-									{#if service.description.startsWith("http://") || service.description.startsWith("https://")}
-										<a
-											href={service.description}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="description description-link"
-											onclick={(e) => e.stopPropagation()}
-											>{service.description}</a
-										>
-									{:else}
-										<p class="description">
-											{service.description}
-										</p>
-									{/if}
+						<div class="service-item" class:edit-mode={editMode}>
+							<div
+								class="service-card"
+								class:dragging={draggedService?.id === service.id}
+								draggable={editMode}
+								ondragstart={(e) =>
+									handleServiceDragStart(e, service)}
+								ondragend={handleServiceDragEnd}
+								ondragover={(e) => {
+									if (
+										draggedService &&
+										draggedService.id !== service.id
+									)
+										e.preventDefault();
+								}}
+								ondrop={(e) => handleServiceDrop(e, service, null)}
+								onclick={() => openServiceDetail(service)}
+								onkeydown={(e) =>
+									e.key === "Enter" && openServiceDetail(service)}
+								role="button"
+								tabindex="0"
+							>
+								{#if serviceUptime && serviceUptime.totalChecks > 0}
+									<span
+										class="service-uptime"
+										class:is-success={serviceUptime.uptimePercent >=
+											90}
+										class:is-warning={serviceUptime.uptimePercent >=
+											75 && serviceUptime.uptimePercent < 90}
+										class:is-error={serviceUptime.uptimePercent <
+											75}
+										>{serviceUptime.uptimePercent.toFixed(
+											1,
+										)}%</span
+									>
 								{/if}
+								<div class="service-info">
+									<div class="service-header">
+										<h3>{service.name}</h3>
+										{#if data.user && !service.isPublic}
+											<span class="visibility-badge private"
+												>private</span
+											>
+										{/if}
+									</div>
+									<a
+										href={service.displayUrl || service.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="url"
+										onclick={(e) => e.stopPropagation()}
+										>{service.displayUrl || service.url}</a
+									>
+									<div class="meta">
+										{#if check}
+											<span class="response-time"
+												>{formatTime(
+													check.responseTime,
+												)}</span
+											>
+											<span
+												class="status-code"
+												class:success={check.success}
+												class:error={!check.success}
+												>{check.statusCode ?? "error"}</span
+											>
+											<span class="last-check"
+												>checked {formatDate(
+													check.checkedAt,
+												)}</span
+											>
+										{:else}
+											<span class="pending-text"
+												>pending first check</span
+											>
+										{/if}
+									</div>
+									{#if service.description}
+										{#if service.description.startsWith("http://") || service.description.startsWith("https://")}
+											<a
+												href={service.description}
+												target="_blank"
+												rel="noopener noreferrer"
+												class="description description-link"
+												onclick={(e) => e.stopPropagation()}
+												>{service.description}</a
+											>
+										{:else}
+											<p class="description">
+												{service.description}
+											</p>
+										{/if}
+									{/if}
+								</div>
 							</div>
 							{#if editMode}
 								<div class="service-actions">
@@ -1000,7 +1061,6 @@
 										<button
 											type="submit"
 											class="btn sm danger"
-											onclick={(e) => e.stopPropagation()}
 											>delete</button
 										>
 									</form>
@@ -1009,15 +1069,6 @@
 						</div>
 					{/each}
 				</div>
-				{#if editMode}
-					<button
-						type="button"
-						class="btn add-service-btn"
-						onclick={() => openCreateModal(null)}
-					>
-						+ add service
-					</button>
-				{/if}
 			{/if}
 		{/if}
 	</main>
@@ -1359,7 +1410,10 @@
 							{/if}
 							{#if selectedService.expectedBody}
 								<dt>Expected Body</dt>
-								<dd><pre class="expected-body">{selectedService.expectedBody}</pre></dd>
+								<dd>
+									<pre
+										class="expected-body">{selectedService.expectedBody}</pre>
+								</dd>
 							{/if}
 							<dt>Check Interval</dt>
 							<dd>{selectedService.checkInterval}s</dd>
@@ -1489,7 +1543,9 @@
 						placeholder=" "
 						value={editingService.expectedContentType ?? ""}
 					/>
-					<label for="edit-expectedContentType">Expected Content-Type (optional)</label>
+					<label for="edit-expectedContentType"
+						>Expected Content-Type (optional)</label
+					>
 				</div>
 
 				<div class="form-group">
@@ -1497,9 +1553,11 @@
 						id="edit-expectedBody"
 						name="expectedBody"
 						placeholder=" "
-						rows="3"
-					>{editingService.expectedBody ?? ""}</textarea>
-					<label for="edit-expectedBody">Expected Body (optional)</label>
+						rows="3">{editingService.expectedBody ?? ""}</textarea
+					>
+					<label for="edit-expectedBody"
+						>Expected Body (optional)</label
+					>
 				</div>
 
 				<div class="form-group">
@@ -1530,6 +1588,16 @@
 						/>
 						<span>Public (visible to everyone)</span>
 					</label>
+					{#if data.user?.role === "admin"}
+						<label class="checkbox-label">
+							<input
+								type="checkbox"
+								name="emailNotifications"
+								checked={editingService.emailNotifications}
+							/>
+							<span>Email notifications</span>
+						</label>
+					{/if}
 				</div>
 
 				<div class="form-actions">
@@ -1661,7 +1729,9 @@
 						name="expectedContentType"
 						placeholder=" "
 					/>
-					<label for="create-expectedContentType">Expected Content-Type (optional)</label>
+					<label for="create-expectedContentType"
+						>Expected Content-Type (optional)</label
+					>
 				</div>
 
 				<div class="form-group">
@@ -1671,7 +1741,9 @@
 						placeholder=" "
 						rows="3"
 					></textarea>
-					<label for="create-expectedBody">Expected Body (optional)</label>
+					<label for="create-expectedBody"
+						>Expected Body (optional)</label
+					>
 				</div>
 
 				<div class="form-group">
@@ -1694,6 +1766,12 @@
 						<input type="checkbox" name="isPublic" />
 						<span>Public (visible to everyone)</span>
 					</label>
+					{#if data.user?.role === "admin"}
+						<label class="checkbox-label">
+							<input type="checkbox" name="emailNotifications" />
+							<span>Email notifications</span>
+						</label>
+					{/if}
 				</div>
 
 				<div class="form-actions">

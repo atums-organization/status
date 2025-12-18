@@ -10,6 +10,7 @@ export interface Service {
 	checkInterval: number;
 	enabled: boolean;
 	isPublic: boolean;
+	emailNotifications: boolean;
 	groupName: string | null;
 	position: number;
 	createdBy: string;

@@ -9,6 +9,7 @@ import {
 	formatShortTime as formatShortTimeUtil,
 	formatResponseTime,
 } from "$lib";
+import favicon from "$lib/assets/favicon.svg";
 import { createSSEConnection } from "$lib/sse";
 import type { PageData } from "./$types";
 import { goto } from "$app/navigation";
@@ -17,6 +18,8 @@ import { onMount } from "svelte";
 import "./page.css";
 
 const { data }: { data: PageData } = $props();
+
+const siteIcon = $derived(data.site.icon || favicon);
 
 // eslint-disable-next-line svelte/prefer-writable-derived -- need mutable state for SSE updates
 let checks = $state<Record<string, ServiceCheck | null>>({ ...data.checks });
@@ -277,21 +280,26 @@ function formatGraphDate(date: string): string {
 
 <div class="container">
 	<header class="header">
-		<h1><a href="/" class="brand-link"><span class="brand">{data.site.brand}</span>{data.site.suffix}</a></h1>
-		<nav class="nav">
-			<a href="/" class="nav-link">index</a>
-			{#if data.site.sourceUrl}
-				<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+		<div class="header-left">
+			<img src={siteIcon} alt="" class="site-icon" />
+			<h1><a href="/" class="brand-link"><span class="brand">{data.site.brand}</span>{data.site.suffix}</a></h1>
+			<nav class="nav">
+				<a href="/" class="nav-link">index</a>
+				{#if data.site.sourceUrl}
+					<a href={data.site.sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
+				{/if}
+				{#if data.site.discordUrl}
+					<a href={data.site.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
+				{/if}
+			</nav>
+		</div>
+		<div class="header-actions">
+			{#if data.user}
+				<UserMenu user={data.user} />
+			{:else}
+				<a href="/login" class="login-link">login</a>
 			{/if}
-			{#if data.site.discordUrl}
-				<a href={data.site.discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
-			{/if}
-		</nav>
-		{#if data.user}
-			<UserMenu user={data.user} />
-		{:else}
-			<a href="/login" class="login-link">login</a>
-		{/if}
+		</div>
 	</header>
 
 	<main class="main centered">

@@ -3,22 +3,23 @@ import * as api from "$lib/server/api";
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/public";
-import type { Service, ServiceCheck } from "$lib";
+import type { Service, ServiceCheck, SiteSettings } from "$lib";
 
 function calculateEmbed(
 	groupName: string,
 	services: Service[],
 	checks: Record<string, ServiceCheck | null>,
 	uptime: Record<string, { uptimePercent: number; totalChecks: number }>,
+	settings: SiteSettings | null,
 ) {
-	const siteName = env.PUBLIC_SITE_NAME || "atums/status";
-	const siteUrl = env.PUBLIC_SITE_URL || "";
+	const siteName = settings?.siteName || "status";
+	const siteUrl = settings?.siteUrl || "";
 
 	if (services.length === 0) {
 		return {
 			siteName,
 			siteUrl,
-			title: `${groupName} | ${siteName}`,
+			title: groupName,
 			description: "No services in this group",
 			status: "unknown" as const,
 			color: 0x808080,
@@ -63,7 +64,7 @@ function calculateEmbed(
 	return {
 		siteName,
 		siteUrl,
-		title: `${groupName} | ${siteName}`,
+		title: groupName,
 		description,
 		status,
 		color,
@@ -120,7 +121,9 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 		publicChecks[s.id] = checks[s.id];
 		if (uptime[s.id]) publicUptime[s.id] = uptime[s.id];
 	}
-	const embed = calculateEmbed(groupName, publicServices, publicChecks, publicUptime);
+
+	const settings = await api.getSettings().catch(() => null);
+	const embed = calculateEmbed(groupName, publicServices, publicChecks, publicUptime, settings);
 
 	return { user, services: filtered, checks, groupName, uptime, timezone, activeEvents, recentEvents, embed };
 };

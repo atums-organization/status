@@ -1,0 +1,31 @@
+.error-page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: var(--spacing-2xl) var(--spacing-lg);
+	min-height: 50vh;
+}
+
+.error-code {
+	font-size: 6rem;
+	font-weight: var(--font-bold);
+	color: var(--color-accent);
+	line-height: 1;
+	margin-bottom: var(--spacing-md);
+}
+
+.error-title {
+	margin: 0 0 var(--spacing-sm);
+	font-size: var(--text-xl);
+	font-weight: var(--font-semibold);
+	color: var(--color-text);
+	text-transform: lowercase;
+}
+
+.error-message {
+	margin: 0 0 var(--spacing-xl);
+	color: var(--color-text-secondary);
+	font-size: var(--text-sm);
+}

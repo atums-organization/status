@@ -259,7 +259,10 @@
 		const index = groupList.findIndex((g) => g.name === groupName);
 		if (index <= 0) return;
 
-		[groupList[index - 1], groupList[index]] = [groupList[index], groupList[index - 1]];
+		[groupList[index - 1], groupList[index]] = [
+			groupList[index],
+			groupList[index - 1],
+		];
 
 		const positions = groupList.map((g, i) => ({
 			name: g.name,
@@ -274,7 +277,10 @@
 		const index = groupList.findIndex((g) => g.name === groupName);
 		if (index === -1 || index >= groupList.length - 1) return;
 
-		[groupList[index], groupList[index + 1]] = [groupList[index + 1], groupList[index]];
+		[groupList[index], groupList[index + 1]] = [
+			groupList[index + 1],
+			groupList[index],
+		];
 
 		const positions = groupList.map((g, i) => ({
 			name: g.name,
@@ -484,25 +490,37 @@
 										class="reorder-btn"
 										disabled={groupIndex === 0}
 										onclick={() => moveGroupUp(group.name)}
-										title="Move up"
-									>&#9650;</button>
+										title="Move up">&#9650;</button
+									>
 									<button
 										type="button"
 										class="reorder-btn"
-										disabled={groupIndex === sortedGroups.length - 1}
-										onclick={() => moveGroupDown(group.name)}
-										title="Move down"
-									>&#9660;</button>
+										disabled={groupIndex ===
+											sortedGroups.length - 1}
+										onclick={() =>
+											moveGroupDown(group.name)}
+										title="Move down">&#9660;</button
+									>
 								</div>
 							{/if}
-							<h2 class="group-title">{group.name}</h2>
+							<a href="/{group.name}"
+								><h2 class="group-title">{group.name}</h2></a
+							>
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
 								<span
 									class="group-uptime"
-									class:is-success={groupUptime[group.name]! >= 90}
-									class:is-warning={groupUptime[group.name]! >= 75 && groupUptime[group.name]! < 90}
-									class:is-error={groupUptime[group.name]! < 75}
-								>{groupUptime[group.name]?.toFixed(2)}%</span>
+									class:is-success={groupUptime[
+										group.name
+									]! >= 90}
+									class:is-warning={groupUptime[
+										group.name
+									]! >= 75 && groupUptime[group.name]! < 90}
+									class:is-error={groupUptime[group.name]! <
+										75}
+									>{groupUptime[group.name]?.toFixed(
+										2,
+									)}%</span
+								>
 							{/if}
 						</div>
 						<div

@@ -9,7 +9,22 @@ import type { Route } from "../types";
 
 const basePath = process.env.API_BASE_PATH || "";
 
+const securityTxt = `Contact: ${process.env.SECURITY_CONTACT || "security@example.com"}
+Preferred-Languages: en
+Canonical: ${process.env.SECURITY_CANONICAL || "/.well-known/security.txt"}
+`;
+
+async function getSecurityTxt(): Promise<Response> {
+	return new Response(securityTxt, {
+		headers: { "Content-Type": "text/plain; charset=utf-8" },
+	});
+}
+
 const routes: Route[] = [
+	{
+		pattern: /^\/\.well-known\/security\.txt$/,
+		handlers: { GET: getSecurityTxt },
+	},
 	{
 		pattern: /^\/auth\/login$/,
 		handlers: { POST: auth.login },

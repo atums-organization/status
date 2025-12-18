@@ -361,4 +361,31 @@ export const actions: Actions = {
 			return fail(400, { error: "Invalid positions data" });
 		}
 	},
+
+	renameGroup: async ({ cookies, request, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) return fail(401, { renameError: "Unauthorized" });
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			clearSession(cookies);
+			return fail(401, { renameError: "Unauthorized" });
+		}
+
+		const formData = await request.formData();
+		const oldName = formData.get("oldName")?.toString().trim();
+		const newName = formData.get("newName")?.toString().trim();
+
+		if (!oldName || !newName) {
+			return fail(400, { renameError: "Group name is required" });
+		}
+
+		try {
+			await api.renameGroup(oldName, newName, sessionId);
+			await api.auditLog(user.id, "update", "group", oldName, { oldName, newName }, getClientAddress(), sessionId);
+			return { success: true, renamed: true };
+		} catch (err) {
+			return fail(400, { renameError: err instanceof Error ? err.message : "Failed to rename group" });
+		}
+	},
 };

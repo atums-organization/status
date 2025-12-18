@@ -399,3 +399,31 @@ export async function updateGroupPositions(req: Request): Promise<Response> {
 
 	return ok({ message: "Group positions updated" });
 }
+
+export async function renameGroup(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
+	const body = await req.json();
+	const { oldName, newName } = body;
+
+	if (!oldName || !newName) {
+		return badRequest("Old name and new name required");
+	}
+
+	if (oldName === newName) {
+		return ok({ message: "No change needed" });
+	}
+
+	const existingNew = await sql`SELECT id FROM groups WHERE name = ${newName}`;
+	if (existingNew.length > 0) {
+		return badRequest("A group with that name already exists");
+	}
+
+	await sql`UPDATE groups SET name = ${newName} WHERE name = ${oldName}`;
+	await sql`UPDATE services SET group_name = ${newName} WHERE group_name = ${oldName}`;
+
+	return ok({ message: "Group renamed" });
+}

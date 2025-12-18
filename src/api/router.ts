@@ -78,6 +78,10 @@ const routes: Route[] = [
 		handlers: { PUT: services.updateGroupPositions },
 	},
 	{
+		pattern: /^\/groups\/rename$/,
+		handlers: { PUT: services.renameGroup },
+	},
+	{
 		pattern: /^\/checks\/service\/([^/]+)$/,
 		handlers: { GET: checks.getForService, POST: checks.runCheck },
 	},

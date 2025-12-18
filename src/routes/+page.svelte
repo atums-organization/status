@@ -81,6 +81,8 @@
 	let loading = $state(false);
 
 	let draggedService = $state<Service | null>(null);
+	let editingGroupName = $state<string | null>(null);
+	let newGroupName = $state("");
 
 	function handleFormResult() {
 		return async ({
@@ -255,6 +257,36 @@
 	function openCreateModal(groupName: string | null = null) {
 		creatingService = true;
 		creatingInGroup = groupName;
+	}
+
+	function openRenameGroup(groupName: string) {
+		editingGroupName = groupName;
+		newGroupName = groupName;
+	}
+
+	function closeRenameGroup() {
+		editingGroupName = null;
+		newGroupName = "";
+	}
+
+	async function saveGroupName() {
+		if (!editingGroupName || !newGroupName.trim()) return;
+		if (editingGroupName === newGroupName.trim()) {
+			closeRenameGroup();
+			return;
+		}
+
+		const formData = new FormData();
+		formData.set("oldName", editingGroupName);
+		formData.set("newName", newGroupName.trim());
+
+		await fetch("?/renameGroup", {
+			method: "POST",
+			body: formData,
+		});
+
+		closeRenameGroup();
+		await invalidateAll();
 	}
 
 	function handleServiceDragStart(e: DragEvent, service: Service) {
@@ -603,9 +635,32 @@
 									>
 								</div>
 							{/if}
-							<a href="/{encodeURIComponent(group.name)}"
-								><h2 class="group-title">{group.name}</h2></a
-							>
+							{#if editingGroupName === group.name}
+								<div class="group-rename-form">
+									<input
+										type="text"
+										bind:value={newGroupName}
+										class="group-rename-input"
+										onkeydown={(e) => {
+											if (e.key === "Enter") saveGroupName();
+											if (e.key === "Escape") closeRenameGroup();
+										}}
+									/>
+									<button type="button" class="btn sm" onclick={saveGroupName}>save</button>
+									<button type="button" class="btn sm" onclick={closeRenameGroup}>cancel</button>
+								</div>
+							{:else}
+								<a href="/{encodeURIComponent(group.name)}"
+									><h2 class="group-title">{group.name}</h2></a
+								>
+								{#if editMode}
+									<button
+										type="button"
+										class="btn sm"
+										onclick={() => openRenameGroup(group.name)}
+									>rename</button>
+								{/if}
+							{/if}
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}
 								<span
 									class="group-uptime"

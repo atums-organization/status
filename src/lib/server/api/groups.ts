@@ -25,3 +25,15 @@ export async function updateGroupPositions(
 		sessionId,
 	});
 }
+
+export async function renameGroup(
+	oldName: string,
+	newName: string,
+	sessionId?: string,
+): Promise<void> {
+	await request("/groups/rename", {
+		method: "PUT",
+		body: JSON.stringify({ oldName, newName }),
+		sessionId,
+	});
+}

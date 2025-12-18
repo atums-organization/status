@@ -44,7 +44,6 @@
 	background: var(--color-accent-muted);
 }
 
-
 .group-header {
 	display: flex;
 	align-items: center;
@@ -54,7 +53,6 @@
 	margin-bottom: var(--spacing-sm);
 	transition: all 0.2s;
 }
-
 
 .group-actions {
 	display: flex;
@@ -92,6 +90,28 @@
 .reorder-btn:disabled {
 	opacity: 0.3;
 	cursor: not-allowed;
+}
+
+.group-rename-form {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	flex: 1;
+}
+
+.group-rename-input {
+	flex: 1;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-sm);
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-size: var(--text-base);
+}
+
+.group-rename-input:focus {
+	outline: none;
+	border-color: var(--color-accent);
 }
 
 .edit-mode .service-card {
@@ -157,7 +177,7 @@
 }
 
 .edit-modal {
-	max-width: 500px;
+	max-width: 900px;
 }
 
 .edit-modal .form {
@@ -223,4 +243,3 @@
 	font-weight: var(--font-medium);
 	white-space: nowrap;
 }
-

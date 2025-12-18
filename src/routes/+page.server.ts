@@ -200,6 +200,8 @@ export const actions: Actions = {
 			formData.get("expectedStatus")?.toString() || "200",
 			10,
 		);
+		const expectedContentType = formData.get("expectedContentType")?.toString().trim() || null;
+		const expectedBody = formData.get("expectedBody")?.toString().trim() || null;
 		const checkInterval = Number.parseInt(
 			formData.get("checkInterval")?.toString() || "60",
 			10,
@@ -233,6 +235,8 @@ export const actions: Actions = {
 			displayUrl,
 			description,
 			expectedStatus,
+			expectedContentType,
+			expectedBody,
 			checkInterval,
 			enabled,
 			isPublic,
@@ -266,6 +270,8 @@ export const actions: Actions = {
 			formData.get("expectedStatus")?.toString() || "200",
 			10,
 		);
+		const expectedContentType = formData.get("expectedContentType")?.toString().trim() || null;
+		const expectedBody = formData.get("expectedBody")?.toString().trim() || null;
 		const checkInterval = Number.parseInt(
 			formData.get("checkInterval")?.toString() || "60",
 			10,
@@ -288,6 +294,8 @@ export const actions: Actions = {
 				description: description || undefined,
 				displayUrl,
 				expectedStatus,
+				expectedContentType,
+				expectedBody,
 				checkInterval,
 				enabled,
 				isPublic,

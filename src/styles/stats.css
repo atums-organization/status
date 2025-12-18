@@ -311,3 +311,15 @@
 .info-list dd a:hover {
 	text-decoration: underline;
 }
+
+.info-list .expected-body {
+	margin: 0;
+	padding: var(--spacing-sm);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	font-size: var(--text-xs);
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 150px;
+	overflow-y: auto;
+}

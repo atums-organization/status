@@ -5,6 +5,8 @@ export interface Service {
 	url: string;
 	displayUrl: string | null;
 	expectedStatus: number;
+	expectedContentType: string | null;
+	expectedBody: string | null;
 	checkInterval: number;
 	enabled: boolean;
 	isPublic: boolean;

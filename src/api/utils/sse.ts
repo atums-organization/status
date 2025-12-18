@@ -6,13 +6,11 @@ const encoder = new TextEncoder();
 export function addClient(controller: ReadableStreamDefaultController<Uint8Array>): string {
 	const id = crypto.randomUUID();
 	clients.set(id, { id, controller });
-	console.log(`[SSE] Client connected: ${id} (total: ${clients.size})`);
 	return id;
 }
 
 export function removeClient(id: string): void {
 	clients.delete(id);
-	console.log(`[SSE] Client disconnected: ${id} (total: ${clients.size})`);
 }
 
 export function broadcastCheck(serviceId: string, check: ServiceCheck): void {

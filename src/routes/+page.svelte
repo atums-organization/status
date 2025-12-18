@@ -1279,6 +1279,14 @@
 							{/if}
 							<dt>Expected Status</dt>
 							<dd>{selectedService.expectedStatus}</dd>
+							{#if selectedService.expectedContentType}
+								<dt>Expected Content-Type</dt>
+								<dd>{selectedService.expectedContentType}</dd>
+							{/if}
+							{#if selectedService.expectedBody}
+								<dt>Expected Body</dt>
+								<dd><pre class="expected-body">{selectedService.expectedBody}</pre></dd>
+							{/if}
 							<dt>Check Interval</dt>
 							<dd>{selectedService.checkInterval}s</dd>
 						</dl>
@@ -1397,6 +1405,27 @@
 						/>
 						<label for="edit-checkInterval">Interval (sec)</label>
 					</div>
+				</div>
+
+				<div class="form-group">
+					<input
+						type="text"
+						id="edit-expectedContentType"
+						name="expectedContentType"
+						placeholder=" "
+						value={editingService.expectedContentType ?? ""}
+					/>
+					<label for="edit-expectedContentType">Expected Content-Type (optional)</label>
+				</div>
+
+				<div class="form-group">
+					<textarea
+						id="edit-expectedBody"
+						name="expectedBody"
+						placeholder=" "
+						rows="3"
+					>{editingService.expectedBody ?? ""}</textarea>
+					<label for="edit-expectedBody">Expected Body (optional)</label>
 				</div>
 
 				<div class="form-group">
@@ -1549,6 +1578,26 @@
 						/>
 						<label for="create-checkInterval">Interval (sec)</label>
 					</div>
+				</div>
+
+				<div class="form-group">
+					<input
+						type="text"
+						id="create-expectedContentType"
+						name="expectedContentType"
+						placeholder=" "
+					/>
+					<label for="create-expectedContentType">Expected Content-Type (optional)</label>
+				</div>
+
+				<div class="form-group">
+					<textarea
+						id="create-expectedBody"
+						name="expectedBody"
+						placeholder=" "
+						rows="3"
+					></textarea>
+					<label for="create-expectedBody">Expected Body (optional)</label>
 				</div>
 
 				<div class="form-group">

@@ -25,6 +25,8 @@ function rowToService(row: Record<string, unknown>): Service {
 		url: row.url as string,
 		displayUrl: row.display_url as string | null,
 		expectedStatus: row.expected_status as number,
+		expectedContentType: row.expected_content_type as string | null,
+		expectedBody: row.expected_body as string | null,
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
 		isPublic: row.is_public as boolean,
@@ -38,6 +40,28 @@ function rowToService(row: Record<string, unknown>): Service {
 
 const checkIntervals = new Map<string, ReturnType<typeof setInterval>>();
 const lastCheckStatus = new Map<string, boolean>();
+
+function jsonContains(actual: unknown, expected: unknown): boolean {
+	if (typeof expected !== typeof actual) return false;
+
+	if (expected === null || typeof expected !== "object") {
+		return actual === expected;
+	}
+
+	if (Array.isArray(expected)) {
+		if (!Array.isArray(actual)) return false;
+		return expected.every((item, i) => jsonContains(actual[i], item));
+	}
+
+	for (const key of Object.keys(expected as Record<string, unknown>)) {
+		if (!(key in (actual as Record<string, unknown>))) return false;
+		if (!jsonContains((actual as Record<string, unknown>)[key], (expected as Record<string, unknown>)[key])) {
+			return false;
+		}
+	}
+
+	return true;
+}
 
 async function performCheck(service: Service): Promise<ServiceCheck> {
 	const id = crypto.randomUUID();
@@ -59,10 +83,40 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 
 		clearTimeout(timeout);
 		statusCode = response.status;
-		success = statusCode === service.expectedStatus;
 
+		const errors: string[] = [];
+
+		if (statusCode !== service.expectedStatus) {
+			errors.push(`Expected status ${service.expectedStatus}, got ${statusCode}`);
+		}
+
+		if (service.expectedContentType) {
+			const contentType = response.headers.get("content-type") || "";
+			if (!contentType.includes(service.expectedContentType)) {
+				errors.push(`Expected content-type ${service.expectedContentType}, got ${contentType}`);
+			}
+		}
+
+		if (service.expectedBody) {
+			const body = await response.text();
+			let matches = false;
+
+			try {
+				const expectedJson = JSON.parse(service.expectedBody);
+				const actualJson = JSON.parse(body);
+				matches = jsonContains(actualJson, expectedJson);
+			} catch {
+				matches = body.includes(service.expectedBody);
+			}
+
+			if (!matches) {
+				errors.push(`Response body does not contain expected content`);
+			}
+		}
+
+		success = errors.length === 0;
 		if (!success) {
-			errorMessage = `Expected ${service.expectedStatus}, got ${statusCode}`;
+			errorMessage = errors.join("; ");
 		}
 	} catch (err) {
 		errorMessage = err instanceof Error ? err.message : "Unknown error";
@@ -106,7 +160,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 
 async function canAccessService(req: Request, serviceId: string): Promise<{ allowed: boolean; service?: Service; response?: Response }> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${serviceId}
 	`;
@@ -316,7 +370,7 @@ export async function runCheck(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${serviceId}
 	`;
@@ -352,7 +406,7 @@ export async function startChecker(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${serviceId}
 	`;
@@ -416,7 +470,7 @@ export async function stopChecker(
 
 export async function initializeCheckers(): Promise<void> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE enabled = true
 	`;

@@ -599,6 +599,14 @@ function formatGraphDate(date: string): string {
 							{/if}
 							<dt>Expected Status</dt>
 							<dd>{selectedService.expectedStatus}</dd>
+							{#if selectedService.expectedContentType}
+								<dt>Expected Content-Type</dt>
+								<dd>{selectedService.expectedContentType}</dd>
+							{/if}
+							{#if selectedService.expectedBody}
+								<dt>Expected Body</dt>
+								<dd><pre class="expected-body">{selectedService.expectedBody}</pre></dd>
+							{/if}
 							<dt>Check Interval</dt>
 							<dd>{selectedService.checkInterval}s</dd>
 						</dl>

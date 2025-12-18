@@ -36,6 +36,8 @@ export async function createService(
 		description?: string;
 		displayUrl?: string | null;
 		expectedStatus?: number;
+		expectedContentType?: string | null;
+		expectedBody?: string | null;
 		checkInterval?: number;
 		enabled?: boolean;
 		isPublic?: boolean;
@@ -58,6 +60,8 @@ export async function updateService(
 		url?: string;
 		displayUrl?: string | null;
 		expectedStatus?: number;
+		expectedContentType?: string | null;
+		expectedBody?: string | null;
 		checkInterval?: number;
 		enabled?: boolean;
 		isPublic?: boolean;

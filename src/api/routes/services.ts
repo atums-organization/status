@@ -11,6 +11,8 @@ function rowToService(row: Record<string, unknown>): Service {
 		url: row.url as string,
 		displayUrl: row.display_url as string | null,
 		expectedStatus: row.expected_status as number,
+		expectedContentType: row.expected_content_type as string | null,
+		expectedBody: row.expected_body as string | null,
 		checkInterval: row.check_interval as number,
 		enabled: row.enabled as boolean,
 		isPublic: row.is_public as boolean,
@@ -38,7 +40,7 @@ export async function list(req: Request): Promise<Response> {
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		ORDER BY position ASC, created_at ASC
 	`;
@@ -48,7 +50,7 @@ export async function list(req: Request): Promise<Response> {
 
 export async function listPublic(): Promise<Response> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE is_public = true AND enabled = true
 		ORDER BY position ASC, created_at ASC
@@ -77,7 +79,7 @@ export async function listByUser(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE created_by = ${userId}
 		ORDER BY position ASC, created_at ASC
@@ -97,7 +99,7 @@ export async function get(
 	}
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -134,6 +136,8 @@ export async function create(req: Request): Promise<Response> {
 		description,
 		displayUrl = null,
 		expectedStatus = 200,
+		expectedContentType = null,
+		expectedBody = null,
 		checkInterval = 60,
 		enabled = true,
 		isPublic = false,
@@ -158,12 +162,12 @@ export async function create(req: Request): Promise<Response> {
 	const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
 
 	await sql`
-		INSERT INTO services (id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by)
-		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${nextPosition}, ${createdBy})
+		INSERT INTO services (id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by)
+		VALUES (${id}, ${name}, ${description || null}, ${url}, ${displayUrl || null}, ${expectedStatus}, ${expectedContentType}, ${expectedBody}, ${checkInterval}, ${enabled}, ${isPublic}, ${groupName || null}, ${nextPosition}, ${createdBy})
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;
@@ -202,6 +206,8 @@ export async function update(
 		url: serviceUrl,
 		displayUrl,
 		expectedStatus,
+		expectedContentType,
+		expectedBody,
 		checkInterval,
 		enabled,
 		isPublic,
@@ -223,6 +229,8 @@ export async function update(
 	if (serviceUrl !== undefined) updates.url = serviceUrl;
 	if (displayUrl !== undefined) updates.display_url = displayUrl;
 	if (expectedStatus !== undefined) updates.expected_status = expectedStatus;
+	if (expectedContentType !== undefined) updates.expected_content_type = expectedContentType;
+	if (expectedBody !== undefined) updates.expected_body = expectedBody;
 	if (checkInterval !== undefined) updates.check_interval = checkInterval;
 	if (enabled !== undefined) updates.enabled = enabled;
 	if (isPublic !== undefined) updates.is_public = isPublic;
@@ -240,7 +248,7 @@ export async function update(
 	`;
 
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE id = ${id}
 	`;

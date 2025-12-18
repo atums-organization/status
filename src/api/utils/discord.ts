@@ -51,6 +51,7 @@ export async function sendServiceDown(
 			const message = formatMessage(webhook.messageDown, serviceName);
 
 			const discordPayload: DiscordPayload = {
+				username: webhook.name,
 				...(webhook.avatarUrl && { avatar_url: webhook.avatarUrl }),
 				embeds: [
 					{
@@ -102,6 +103,7 @@ export async function sendServiceUp(
 			const message = formatMessage(webhook.messageUp, serviceName);
 
 			const discordPayload: DiscordPayload = {
+				username: webhook.name,
 				...(webhook.avatarUrl && { avatar_url: webhook.avatarUrl }),
 				embeds: [
 					{

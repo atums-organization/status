@@ -13,6 +13,7 @@ RUN cd /temp/prod && bun install --production
 FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
+RUN bun run build
 
 FROM base AS release
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
@@ -20,6 +21,7 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 COPY --from=install /temp/prod/node_modules node_modules
 COPY --from=prerelease /usr/src/app/src ./src
 COPY --from=prerelease /usr/src/app/static ./static
+COPY --from=prerelease /usr/src/app/build ./build
 COPY --from=prerelease /usr/src/app/package.json .
 COPY --from=prerelease /usr/src/app/tsconfig.json .
 COPY --from=prerelease /usr/src/app/svelte.config.js .

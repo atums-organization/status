@@ -33,6 +33,14 @@ onMount(() => {
 });
 
 $effect(() => {
+	if (selectedService) {
+		document.body.style.overflow = "hidden";
+	} else {
+		document.body.style.overflow = "";
+	}
+});
+
+$effect(() => {
 	const modalParam = page.url.searchParams.get("modal");
 	if (modalParam) {
 		if (!selectedService || selectedService.id !== modalParam) {

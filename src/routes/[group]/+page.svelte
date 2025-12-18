@@ -10,9 +10,29 @@ import {
 	formatResponseTime,
 } from "$lib";
 import type { PageData } from "./$types";
+import { goto } from "$app/navigation";
+import { page } from "$app/state";
 import "./page.css";
 
 const { data }: { data: PageData } = $props();
+
+$effect(() => {
+	const modalParam = page.url.searchParams.get("modal");
+	if (modalParam) {
+		if (!selectedService || selectedService.id !== modalParam) {
+			const service = data.services?.find((s) => s.id === modalParam);
+			if (service) {
+				openServiceDetail(service, false);
+			} else {
+				goto(`/${data.groupName}`, { replaceState: true, noScroll: true });
+			}
+		}
+	} else if (selectedService) {
+		selectedService = null;
+		serviceChecks = [];
+		serviceStats = null;
+	}
+});
 
 const embedColor = $derived(
 	data.embed.status === "operational"
@@ -59,11 +79,15 @@ function getEventTypeClass(type: string): string {
 	}
 }
 
-async function openServiceDetail(service: Service) {
+async function openServiceDetail(service: Service, updateUrl = true) {
 	selectedService = service;
 	loading = true;
 	serviceChecks = [];
 	serviceStats = null;
+
+	if (updateUrl) {
+		goto(`?modal=${service.id}`, { replaceState: false, noScroll: true });
+	}
 
 	try {
 		const [checksRes, statsRes] = await Promise.all([
@@ -91,6 +115,7 @@ function closeModal() {
 	selectedService = null;
 	serviceChecks = [];
 	serviceStats = null;
+	goto(`/${data.groupName}`, { replaceState: false, noScroll: true });
 }
 
 let hoveredPoint = $state<{

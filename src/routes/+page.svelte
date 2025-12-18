@@ -11,10 +11,29 @@
 	} from "$lib";
 	import type { ActionData, PageData } from "./$types";
 	import { enhance } from "$app/forms";
-	import { invalidateAll } from "$app/navigation";
+	import { goto, invalidateAll } from "$app/navigation";
+	import { page } from "$app/state";
 	import "./page.css";
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	$effect(() => {
+		const modalParam = page.url.searchParams.get("modal");
+		if (modalParam) {
+			if (!selectedService || selectedService.id !== modalParam) {
+				const service = data.services?.find((s) => s.id === modalParam);
+				if (service) {
+					openServiceDetail(service, false);
+				} else {
+					goto("/", { replaceState: true, noScroll: true });
+				}
+			}
+		} else if (selectedService) {
+			selectedService = null;
+			serviceChecks = [];
+			serviceStats = null;
+		}
+	});
 
 	const embedColor = $derived(
 		data.embed.status === "operational"
@@ -160,12 +179,16 @@
 		return result;
 	});
 
-	async function openServiceDetail(service: Service) {
+	async function openServiceDetail(service: Service, updateUrl = true) {
 		if (editMode) return;
 		selectedService = service;
 		loading = true;
 		serviceChecks = [];
 		serviceStats = null;
+
+		if (updateUrl) {
+			goto(`?modal=${service.id}`, { replaceState: false, noScroll: true });
+		}
 
 		try {
 			const [checksRes, statsRes] = await Promise.all([
@@ -193,6 +216,7 @@
 		selectedService = null;
 		serviceChecks = [];
 		serviceStats = null;
+		goto("/", { replaceState: false, noScroll: true });
 	}
 
 	function closeEditModal() {

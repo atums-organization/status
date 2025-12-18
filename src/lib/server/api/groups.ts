@@ -37,3 +37,14 @@ export async function renameGroup(
 		sessionId,
 	});
 }
+
+export async function deleteGroup(
+	name: string,
+	sessionId?: string,
+): Promise<void> {
+	await request("/groups/delete", {
+		method: "DELETE",
+		body: JSON.stringify({ name }),
+		sessionId,
+	});
+}

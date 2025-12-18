@@ -82,6 +82,10 @@ const routes: Route[] = [
 		handlers: { PUT: services.renameGroup },
 	},
 	{
+		pattern: /^\/groups\/delete$/,
+		handlers: { DELETE: services.deleteGroup },
+	},
+	{
 		pattern: /^\/checks\/service\/([^/]+)$/,
 		handlers: { GET: checks.getForService, POST: checks.runCheck },
 	},

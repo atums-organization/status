@@ -427,3 +427,26 @@ export async function renameGroup(req: Request): Promise<Response> {
 
 	return ok({ message: "Group renamed" });
 }
+
+export async function deleteGroup(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
+	const body = await req.json();
+	const { name } = body;
+
+	if (!name) {
+		return badRequest("Group name required");
+	}
+
+	const services = await sql`SELECT id FROM services WHERE group_name = ${name} LIMIT 1`;
+	if (services.length > 0) {
+		return badRequest("Cannot delete group with services. Move all services first.");
+	}
+
+	await sql`DELETE FROM groups WHERE name = ${name}`;
+
+	return noContent();
+}

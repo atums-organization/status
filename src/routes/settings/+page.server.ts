@@ -239,6 +239,7 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const settings = {
 			siteName: data.get("siteName")?.toString() || "",
+			siteIcon: data.get("siteIcon")?.toString() || "",
 			siteUrl: data.get("siteUrl")?.toString() || "",
 			sourceUrl: data.get("sourceUrl")?.toString() || "",
 			discordUrl: data.get("discordUrl")?.toString() || "",

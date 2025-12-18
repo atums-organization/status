@@ -289,6 +289,18 @@
 		await invalidateAll();
 	}
 
+	async function deleteGroup(groupName: string) {
+		const formData = new FormData();
+		formData.set("name", groupName);
+
+		await fetch("?/deleteGroup", {
+			method: "POST",
+			body: formData,
+		});
+
+		await invalidateAll();
+	}
+
 	function handleServiceDragStart(e: DragEvent, service: Service) {
 		if (!editMode) return;
 		draggedService = service;
@@ -659,6 +671,13 @@
 										class="btn sm"
 										onclick={() => openRenameGroup(group.name)}
 									>rename</button>
+									{#if services.length === 0}
+										<button
+											type="button"
+											class="btn sm danger"
+											onclick={() => deleteGroup(group.name)}
+										>delete</button>
+									{/if}
 								{/if}
 							{/if}
 							{#if groupUptime[group.name] !== null && groupUptime[group.name] !== undefined}

@@ -388,4 +388,30 @@ export const actions: Actions = {
 			return fail(400, { renameError: err instanceof Error ? err.message : "Failed to rename group" });
 		}
 	},
+
+	deleteGroup: async ({ cookies, request, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) return fail(401, { error: "Unauthorized" });
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			clearSession(cookies);
+			return fail(401, { error: "Unauthorized" });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get("name")?.toString().trim();
+
+		if (!name) {
+			return fail(400, { error: "Group name is required" });
+		}
+
+		try {
+			await api.deleteGroup(name, sessionId);
+			await api.auditLog(user.id, "delete", "group", name, null, getClientAddress(), sessionId);
+			return { success: true, deleted: true };
+		} catch (err) {
+			return fail(400, { error: err instanceof Error ? err.message : "Failed to delete group" });
+		}
+	},
 };

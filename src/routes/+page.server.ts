@@ -9,9 +9,9 @@ function calculateEmbed(
 	services: Service[],
 	checks: Record<string, ServiceCheck | null>,
 	uptime: Record<string, { uptimePercent: number; totalChecks: number }>,
+	siteName: string,
+	siteUrl: string,
 ) {
-	const siteName = env.PUBLIC_SITE_NAME || "atums/status";
-	const siteUrl = env.PUBLIC_SITE_URL || "";
 
 	if (services.length === 0) {
 		return {
@@ -77,6 +77,17 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	const sessionId = getSessionId(cookies);
 	const timezone = env.PUBLIC_TIMEZONE || "UTC";
 
+	let siteName = "atums/status";
+	let siteUrl = "";
+
+	try {
+		const settings = await api.getSettings();
+		siteName = settings.siteName || "atums/status";
+		siteUrl = settings.siteUrl || "";
+	} catch {
+		// defaults if api dies
+	}
+
 	if (!sessionId) {
 		const [services, groups] = await Promise.all([
 			api.getPublicServices(),
@@ -90,7 +101,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 						api.getUptimeForServices(serviceIds),
 					])
 				: [{}, {}];
-		const embed = calculateEmbed(services, checks, uptime);
+		const embed = calculateEmbed(services, checks, uptime, siteName, siteUrl);
 		return { user: null, services, checks, groups, uptime, timezone, embed };
 	}
 
@@ -109,7 +120,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 						api.getUptimeForServices(serviceIds),
 					])
 				: [{}, {}];
-		const embed = calculateEmbed(services, checks, uptime);
+		const embed = calculateEmbed(services, checks, uptime, siteName, siteUrl);
 		return { user: null, services, checks, groups, uptime, timezone, embed };
 	}
 
@@ -133,7 +144,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		publicChecks[s.id] = checks[s.id];
 		if (uptime[s.id]) publicUptime[s.id] = uptime[s.id];
 	}
-	const embed = calculateEmbed(publicServices, publicChecks, publicUptime);
+	const embed = calculateEmbed(publicServices, publicChecks, publicUptime, siteName, siteUrl);
 
 	return { user, services, checks, groups, uptime, timezone, embed };
 };

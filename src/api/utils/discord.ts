@@ -41,7 +41,7 @@ export async function sendServiceDown(
 	errorMessage: string | null,
 ): Promise<void> {
 	const settings = await getSettings();
-	const siteUrl = settings.siteUrl;
+	const siteName = settings.siteName || "status monitor";
 	const webhooks = await getWebhooksForGroup(groupName);
 
 	console.log(`[Webhook] Sending DOWN notification for "${serviceName}" to ${webhooks.length} webhook(s)`);
@@ -66,7 +66,7 @@ export async function sendServiceDown(
 								: []),
 						],
 						timestamp: new Date().toISOString(),
-						footer: { text: siteUrl || "status monitor" },
+						footer: { text: siteName },
 					},
 				],
 			};
@@ -92,7 +92,7 @@ export async function sendServiceUp(
 	responseTime: number,
 ): Promise<void> {
 	const settings = await getSettings();
-	const siteUrl = settings.siteUrl;
+	const siteName = settings.siteName || "status monitor";
 	const webhooks = await getWebhooksForGroup(groupName);
 
 	console.log(`[Webhook] Sending UP notification for "${serviceName}" to ${webhooks.length} webhook(s)`);
@@ -112,7 +112,7 @@ export async function sendServiceUp(
 							{ name: "response time", value: `${responseTime}ms`, inline: true },
 						],
 						timestamp: new Date().toISOString(),
-						footer: { text: siteUrl || "status monitor" },
+						footer: { text: siteName },
 					},
 				],
 			};

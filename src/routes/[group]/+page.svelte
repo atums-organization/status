@@ -59,11 +59,11 @@ async function openServiceDetail(service: Service) {
 
 		if (checksRes.ok) {
 			const checksData = await checksRes.json();
-			serviceChecks = checksData.checks ?? [];
+			serviceChecks = checksData.data?.checks ?? [];
 		}
 		if (statsRes.ok) {
 			const statsData = await statsRes.json();
-			serviceStats = statsData.stats ?? null;
+			serviceStats = statsData.data?.stats ?? null;
 		}
 	} catch {
 		serviceChecks = [];

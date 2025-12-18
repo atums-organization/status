@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		return { user: null, services, checks, groups, uptime, timezone, discordUrl };
 	}
 
-	const user = await api.getUserById(sessionId);
+	const user = await api.getUserById(sessionId, sessionId);
 	if (!user) {
 		clearSession(cookies);
 		const [services, groups] = await Promise.all([
@@ -44,7 +44,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	}
 
 	const [services, groups] = await Promise.all([
-		api.getServices(),
+		api.getServices(sessionId),
 		api.getGroups(),
 	]);
 	const serviceIds = services.map((s) => s.id);
@@ -64,7 +64,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { error: "Unauthorized" });
@@ -75,9 +75,9 @@ export const actions: Actions = {
 
 		if (!serviceId) return fail(400, { error: "Service ID required" });
 
-		await api.stopChecker(serviceId);
-		await api.deleteService(serviceId);
-		await api.auditLog(user.id, "delete", "service", serviceId, null, getClientAddress());
+		await api.stopChecker(serviceId, sessionId);
+		await api.deleteService(serviceId, sessionId);
+		await api.auditLog(user.id, "delete", "service", serviceId, null, getClientAddress(), sessionId);
 
 		return { success: true };
 	},
@@ -86,7 +86,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { error: "Unauthorized" });
@@ -97,7 +97,7 @@ export const actions: Actions = {
 
 		if (!serviceId) return fail(400, { error: "Service ID required" });
 
-		const check = await api.runCheck(serviceId);
+		const check = await api.runCheck(serviceId, sessionId);
 		return { success: true, check };
 	},
 
@@ -105,7 +105,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { editError: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { editError: "Unauthorized" });
@@ -147,7 +147,7 @@ export const actions: Actions = {
 			return fail(400, { editError: "Check interval must be between 10 and 3600 seconds", editServiceId: serviceId });
 		}
 
-		await api.stopChecker(serviceId);
+		await api.stopChecker(serviceId, sessionId);
 		await api.updateService(serviceId, {
 			name,
 			url,
@@ -158,11 +158,11 @@ export const actions: Actions = {
 			enabled,
 			isPublic,
 			groupName,
-		});
-		await api.auditLog(user.id, "update", "service", serviceId, { name, url, enabled, isPublic }, getClientAddress());
+		}, sessionId);
+		await api.auditLog(user.id, "update", "service", serviceId, { name, url, enabled, isPublic }, getClientAddress(), sessionId);
 
 		if (enabled) {
-			await api.startChecker(serviceId);
+			await api.startChecker(serviceId, sessionId);
 		}
 
 		return { success: true, edited: true };
@@ -172,7 +172,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { createError: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { createError: "Unauthorized" });
@@ -205,7 +205,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const service = await api.createService(name, url, user.id, {
+			const service = await api.createService(name, url, sessionId, {
 				description: description || undefined,
 				displayUrl,
 				expectedStatus,
@@ -214,10 +214,10 @@ export const actions: Actions = {
 				isPublic,
 				groupName,
 			});
-			await api.auditLog(user.id, "create", "service", service.id, { name, url, enabled, isPublic }, getClientAddress());
+			await api.auditLog(user.id, "create", "service", service.id, { name, url, enabled, isPublic }, getClientAddress(), sessionId);
 
 			if (enabled) {
-				await api.startChecker(service.id);
+				await api.startChecker(service.id, sessionId);
 			}
 
 			return { success: true, created: true };
@@ -231,7 +231,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { error: "Unauthorized" });
@@ -244,7 +244,7 @@ export const actions: Actions = {
 
 		try {
 			const positions = JSON.parse(positionsJson);
-			await api.updateServicePositions(positions);
+			await api.updateServicePositions(positions, sessionId);
 			return { success: true };
 		} catch {
 			return fail(400, { error: "Invalid positions data" });
@@ -255,7 +255,7 @@ export const actions: Actions = {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			return fail(401, { error: "Unauthorized" });
@@ -268,7 +268,7 @@ export const actions: Actions = {
 
 		try {
 			const positions = JSON.parse(positionsJson);
-			await api.updateGroupPositions(positions);
+			await api.updateGroupPositions(positions, sessionId);
 			return { success: true };
 		} catch {
 			return fail(400, { error: "Invalid positions data" });

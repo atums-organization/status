@@ -16,12 +16,12 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 	if (!sessionId) {
 		services = await api.getPublicServices();
 	} else {
-		user = await api.getUserById(sessionId);
+		user = await api.getUserById(sessionId, sessionId);
 		if (!user) {
 			clearSession(cookies);
 			services = await api.getPublicServices();
 		} else {
-			services = await api.getServices();
+			services = await api.getServices(sessionId);
 		}
 	}
 

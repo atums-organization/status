@@ -1,5 +1,7 @@
 import { sql } from "../index";
 import type { Group, Service } from "../types";
+import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
+import { ok, created, noContent, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 
 function rowToService(row: Record<string, unknown>): Service {
 	return {
@@ -29,14 +31,19 @@ function rowToGroup(row: Record<string, unknown>): Group {
 	};
 }
 
-export async function list(): Promise<Response> {
+export async function list(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const rows = await sql`
 		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
 		FROM services
 		ORDER BY position ASC, created_at ASC
 	`;
 
-	return Response.json({ services: rows.map(rowToService) });
+	return ok({ services: rows.map(rowToService) });
 }
 
 export async function listPublic(): Promise<Response> {
@@ -47,17 +54,26 @@ export async function listPublic(): Promise<Response> {
 		ORDER BY position ASC, created_at ASC
 	`;
 
-	return Response.json({ services: rows.map(rowToService) });
+	return ok({ services: rows.map(rowToService) });
 }
 
 export async function listByUser(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const userId = params?.id;
 	if (!userId) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
+	}
+
+	if (auth.user.id !== userId && !auth.isAdmin) {
+		return forbidden("Cannot access other users' services");
 	}
 
 	const rows = await sql`
@@ -67,17 +83,17 @@ export async function listByUser(
 		ORDER BY position ASC, created_at ASC
 	`;
 
-	return Response.json({ services: rows.map(rowToService) });
+	return ok({ services: rows.map(rowToService) });
 }
 
 export async function get(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
 	const id = params?.id;
 	if (!id) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
 	}
 
 	const rows = await sql`
@@ -87,18 +103,34 @@ export async function get(
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "Service not found" }, { status: 404 });
+		return notFound("Service not found");
 	}
 
-	return Response.json({ service: rowToService(rows[0]) });
+	const service = rowToService(rows[0]);
+
+	if (!service.isPublic) {
+		const auth = await getAuthContext(req);
+		if (!requireAuth(auth)) {
+			return unauthorized();
+		}
+		if (auth.user.id !== service.createdBy && !auth.isAdmin) {
+			return forbidden("Cannot access this service");
+		}
+	}
+
+	return ok({ service });
 }
 
 export async function create(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const body = await req.json();
 	const {
 		name,
 		url,
-		createdBy,
 		description,
 		displayUrl = null,
 		expectedStatus = 200,
@@ -109,14 +141,18 @@ export async function create(req: Request): Promise<Response> {
 		position,
 	} = body;
 
-	if (!name || !url || !createdBy) {
-		return Response.json(
-			{ error: "Name, URL, and createdBy required" },
-			{ status: 400 },
-		);
+	if (!name || !url) {
+		return badRequest("Name and URL required");
+	}
+
+	try {
+		new URL(url);
+	} catch {
+		return badRequest("Invalid URL format");
 	}
 
 	const id = crypto.randomUUID();
+	const createdBy = auth.user.id;
 
 	const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM services`;
 	const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
@@ -132,17 +168,31 @@ export async function create(req: Request): Promise<Response> {
 		WHERE id = ${id}
 	`;
 
-	return Response.json({ service: rowToService(rows[0]) }, { status: 201 });
+	return created({ service: rowToService(rows[0]) });
 }
 
 export async function update(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const id = params?.id;
 	if (!id) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const existing = await sql`SELECT created_by FROM services WHERE id = ${id}`;
+	if (existing.length === 0) {
+		return notFound("Service not found");
+	}
+
+	if (existing[0].created_by !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot modify this service");
 	}
 
 	const body = await req.json();
@@ -159,6 +209,14 @@ export async function update(
 		position,
 	} = body;
 
+	if (serviceUrl !== undefined) {
+		try {
+			new URL(serviceUrl);
+		} catch {
+			return badRequest("Invalid URL format");
+		}
+	}
+
 	const updates: Record<string, unknown> = {};
 	if (name !== undefined) updates.name = name;
 	if (description !== undefined) updates.description = description;
@@ -172,7 +230,7 @@ export async function update(
 	if (position !== undefined) updates.position = position;
 
 	if (Object.keys(updates).length === 0) {
-		return Response.json({ error: "No fields to update" }, { status: 400 });
+		return badRequest("No fields to update");
 	}
 
 	await sql`
@@ -187,37 +245,59 @@ export async function update(
 		WHERE id = ${id}
 	`;
 
-	if (rows.length === 0) {
-		return Response.json({ error: "Service not found" }, { status: 404 });
-	}
-
-	return Response.json({ service: rowToService(rows[0]) });
+	return ok({ service: rowToService(rows[0]) });
 }
 
 export async function remove(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const id = params?.id;
 	if (!id) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const existing = await sql`SELECT created_by FROM services WHERE id = ${id}`;
+	if (existing.length === 0) {
+		return notFound("Service not found");
+	}
+
+	if (existing[0].created_by !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot delete this service");
 	}
 
 	await sql`DELETE FROM services WHERE id = ${id}`;
 
-	return Response.json({ success: true });
+	return noContent();
 }
 
 export async function updatePositions(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const body = await req.json();
 	const { positions } = body;
 
 	if (!Array.isArray(positions)) {
-		return Response.json({ error: "Positions array required" }, { status: 400 });
+		return badRequest("Positions array required");
 	}
 
 	for (const { id, position, groupName } of positions) {
+		const existing = await sql`SELECT created_by FROM services WHERE id = ${id}`;
+		if (existing.length === 0) continue;
+
+		if (existing[0].created_by !== auth.user.id && !auth.isAdmin) {
+			return forbidden("Cannot modify service positions");
+		}
+
 		if (groupName !== undefined) {
 			await sql`UPDATE services SET position = ${position}, group_name = ${groupName}, updated_at = NOW() WHERE id = ${id}`;
 		} else {
@@ -225,7 +305,7 @@ export async function updatePositions(req: Request): Promise<Response> {
 		}
 	}
 
-	return Response.json({ success: true });
+	return ok({ message: "Positions updated" });
 }
 
 export async function listGroups(): Promise<Response> {
@@ -255,15 +335,20 @@ export async function listGroups(): Promise<Response> {
 		}
 	}
 
-	return Response.json({ groups: allGroups });
+	return ok({ groups: allGroups });
 }
 
 export async function upsertGroup(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const body = await req.json();
 	const { name, position } = body;
 
 	if (!name) {
-		return Response.json({ error: "Name required" }, { status: 400 });
+		return badRequest("Name required");
 	}
 
 	const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
@@ -278,15 +363,20 @@ export async function upsertGroup(req: Request): Promise<Response> {
 	}
 
 	const rows = await sql`SELECT id, name, position, created_at FROM groups WHERE name = ${name}`;
-	return Response.json({ group: rowToGroup(rows[0]) });
+	return ok({ group: rowToGroup(rows[0]) });
 }
 
 export async function updateGroupPositions(req: Request): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const body = await req.json();
 	const { positions } = body;
 
 	if (!Array.isArray(positions)) {
-		return Response.json({ error: "Positions array required" }, { status: 400 });
+		return badRequest("Positions array required");
 	}
 
 	for (const { name, position } of positions) {
@@ -299,5 +389,5 @@ export async function updateGroupPositions(req: Request): Promise<Response> {
 		}
 	}
 
-	return Response.json({ success: true });
+	return ok({ message: "Group positions updated" });
 }

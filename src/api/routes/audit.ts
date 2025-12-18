@@ -1,10 +1,41 @@
 import { sql } from "../index";
+import type { AuditLog } from "../types";
+import { getAuthContext, requireAdmin, requireAuth } from "../utils/auth";
+import { ok, created, badRequest, unauthorized, forbidden } from "../utils/response";
+
+function rowToAuditLog(row: Record<string, unknown>): AuditLog {
+	let details = row.details;
+	if (typeof details === "string") {
+		try {
+			details = JSON.parse(details);
+		} catch {
+			details = null;
+		}
+	}
+	return {
+		id: row.id as string,
+		userId: row.user_id as string,
+		action: row.action as string,
+		entityType: row.entity_type as string,
+		entityId: row.entity_id as string | null,
+		details: details as Record<string, unknown> | null,
+		ipAddress: row.ip_address as string | null,
+		createdAt: row.created_at as string,
+		userName: row.user_name as string | undefined,
+		userEmail: row.user_email as string | undefined,
+	};
+}
 
 export async function list(
-	_req: Request,
+	req: Request,
 	url: URL,
 	_params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const limit = Number.parseInt(url.searchParams.get("limit") || "50", 10);
 	const offset = Number.parseInt(url.searchParams.get("offset") || "0", 10);
 	const action = url.searchParams.get("action");
@@ -58,30 +89,7 @@ export async function list(
 		`;
 	}
 
-	return Response.json({
-		logs: rows.map((row: Record<string, unknown>) => {
-			let details = row.details;
-			if (typeof details === "string") {
-				try {
-					details = JSON.parse(details);
-				} catch {
-					details = null;
-				}
-			}
-			return {
-				id: row.id,
-				userId: row.user_id,
-				action: row.action,
-				entityType: row.entity_type,
-				entityId: row.entity_id,
-				details,
-				ipAddress: row.ip_address,
-				createdAt: row.created_at,
-				userName: row.user_name,
-				userEmail: row.user_email,
-			};
-		}),
-	});
+	return ok({ logs: rows.map(rowToAuditLog) }, { limit, offset });
 }
 
 export async function log(
@@ -104,13 +112,22 @@ export async function create(
 	_url: URL,
 	_params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const body = await req.json();
 	const { userId, action, entityType, entityId, details, ipAddress } = body;
 
 	if (!userId || !action || !entityType) {
-		return Response.json({ error: "userId, action, and entityType are required" }, { status: 400 });
+		return badRequest("userId, action, and entityType are required");
+	}
+
+	if (userId !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot create audit logs for other users");
 	}
 
 	await log(userId, action, entityType, entityId || null, details || null, ipAddress || null);
-	return Response.json({ success: true });
+	return created({ message: "Audit log created" });
 }

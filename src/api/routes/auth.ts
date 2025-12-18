@@ -1,4 +1,6 @@
 import { sql } from "../index";
+import { getAuthContext, requireAuth } from "../utils/auth";
+import { ok, created, badRequest, unauthorized, forbidden, notFound, conflict } from "../utils/response";
 
 async function hashPassword(password: string): Promise<string> {
 	const encoder = new TextEncoder();
@@ -8,10 +10,7 @@ async function hashPassword(password: string): Promise<string> {
 	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function verifyPassword(
-	password: string,
-	hash: string,
-): Promise<boolean> {
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
 	const passwordHash = await hashPassword(password);
 	return passwordHash === hash;
 }
@@ -21,10 +20,7 @@ export async function login(req: Request): Promise<Response> {
 	const { username, password } = body;
 
 	if (!username || !password) {
-		return Response.json(
-			{ error: "Username and password required" },
-			{ status: 400 },
-		);
+		return badRequest("Username and password required");
 	}
 
 	const rows = await sql`
@@ -34,17 +30,17 @@ export async function login(req: Request): Promise<Response> {
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "Invalid credentials" }, { status: 401 });
+		return unauthorized("Invalid credentials");
 	}
 
 	const row = rows[0];
-	const valid = await verifyPassword(password, row.password_hash);
+	const valid = await verifyPassword(password, row.password_hash as string);
 
 	if (!valid) {
-		return Response.json({ error: "Invalid credentials" }, { status: 401 });
+		return unauthorized("Invalid credentials");
 	}
 
-	return Response.json({
+	return ok({
 		user: {
 			id: row.id,
 			username: row.username,
@@ -60,10 +56,11 @@ export async function register(req: Request): Promise<Response> {
 	const { username, email, password, role = "viewer" } = body;
 
 	if (!username || !email || !password) {
-		return Response.json(
-			{ error: "Username, email, and password required" },
-			{ status: 400 },
-		);
+		return badRequest("Username, email, and password required");
+	}
+
+	if (password.length < 8) {
+		return badRequest("Password must be at least 8 characters");
 	}
 
 	const countResult = await sql`SELECT COUNT(*) as count FROM users`;
@@ -75,10 +72,7 @@ export async function register(req: Request): Promise<Response> {
 	`;
 
 	if (existing.length > 0) {
-		return Response.json(
-			{ error: "Username or email already exists" },
-			{ status: 409 },
-		);
+		return conflict("Username or email already exists");
 	}
 
 	const id = crypto.randomUUID();
@@ -89,7 +83,7 @@ export async function register(req: Request): Promise<Response> {
 		VALUES (${id}, ${username}, ${email}, ${passwordHash}, ${assignedRole})
 	`;
 
-	return Response.json({
+	return created({
 		user: {
 			id,
 			username,
@@ -103,17 +97,26 @@ export async function register(req: Request): Promise<Response> {
 export async function isFirstUser(): Promise<Response> {
 	const countResult = await sql`SELECT COUNT(*) as count FROM users`;
 	const count = Number(countResult[0]?.count ?? 0);
-	return Response.json({ isFirstUser: count === 0 });
+	return ok({ isFirstUser: count === 0 });
 }
 
 export async function getUser(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const id = params?.id;
 	if (!id) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
+	}
+
+	if (auth.user.id !== id && !auth.isAdmin) {
+		return forbidden("Cannot access other users");
 	}
 
 	const rows = await sql`
@@ -123,11 +126,11 @@ export async function getUser(
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "User not found" }, { status: 404 });
+		return notFound("User not found");
 	}
 
 	const row = rows[0];
-	return Response.json({
+	return ok({
 		user: {
 			id: row.id,
 			username: row.username,
@@ -140,22 +143,32 @@ export async function getUser(
 
 export async function changePassword(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const id = params?.id;
 	if (!id) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
+	}
+
+	if (auth.user.id !== id) {
+		return forbidden("Cannot change other users' passwords");
 	}
 
 	const body = await req.json();
 	const { currentPassword, newPassword } = body;
 
 	if (!currentPassword || !newPassword) {
-		return Response.json(
-			{ error: "Current and new password required" },
-			{ status: 400 },
-		);
+		return badRequest("Current and new password required");
+	}
+
+	if (newPassword.length < 8) {
+		return badRequest("New password must be at least 8 characters");
 	}
 
 	const rows = await sql`
@@ -163,12 +176,12 @@ export async function changePassword(
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "User not found" }, { status: 404 });
+		return notFound("User not found");
 	}
 
-	const valid = await verifyPassword(currentPassword, rows[0].password_hash);
+	const valid = await verifyPassword(currentPassword, rows[0].password_hash as string);
 	if (!valid) {
-		return Response.json({ error: "Current password is incorrect" }, { status: 401 });
+		return unauthorized("Current password is incorrect");
 	}
 
 	const newHash = await hashPassword(newPassword);
@@ -176,5 +189,5 @@ export async function changePassword(
 		UPDATE users SET password_hash = ${newHash} WHERE id = ${id}
 	`;
 
-	return Response.json({ success: true });
+	return ok({ message: "Password updated" });
 }

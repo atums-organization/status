@@ -4,17 +4,8 @@ import * as checks from "./routes/checks";
 import * as events from "./routes/events";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
-
-type Handler = (
-	req: Request,
-	url: URL,
-	params?: Record<string, string>,
-) => Promise<Response>;
-
-interface Route {
-	pattern: RegExp;
-	handlers: Partial<Record<string, Handler>>;
-}
+import { notFound } from "./utils/response";
+import type { Route } from "../types";
 
 const basePath = process.env.API_BASE_PATH || "";
 
@@ -162,9 +153,12 @@ export async function router(
 				if (match[2]) params.id2 = match[2];
 				return handler(req, url, params);
 			}
-			return Response.json({ error: "Method not allowed" }, { status: 405 });
+			return Response.json(
+				{ success: false, error: "Method not allowed" },
+				{ status: 405 },
+			);
 		}
 	}
 
-	return Response.json({ error: "Not found" }, { status: 404 });
+	return notFound("Route not found");
 }

@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		redirect(302, "/login");
 	}
 
-	const user = await api.getUserById(sessionId);
+	const user = await api.getUserById(sessionId, sessionId);
 	if (!user) {
 		clearSession(cookies);
 		redirect(302, "/login");
@@ -23,10 +23,10 @@ export const load: PageServerLoad = async ({ cookies }) => {
 
 	if (user.role === "admin") {
 		[invites, events, groups, auditLogs] = await Promise.all([
-			api.getInvites(user.id).catch(() => []),
+			api.getInvites(user.id, sessionId).catch(() => []),
 			api.getEvents({ limit: 20 }).catch(() => []),
 			api.getGroups().catch(() => []),
-			api.getAuditLogs({ limit: 50 }).catch(() => []),
+			api.getAuditLogs({ limit: 50, sessionId }).catch(() => []),
 		]);
 	}
 
@@ -58,8 +58,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.changePassword(sessionId, currentPassword, newPassword);
-			await api.auditLog(sessionId, "update", "password", sessionId, null, getClientAddress());
+			await api.changePassword(sessionId, currentPassword, newPassword, sessionId);
+			await api.auditLog(sessionId, "update", "password", sessionId, null, getClientAddress(), sessionId);
 			return { success: "password updated" };
 		} catch (err) {
 			return fail(400, {
@@ -74,14 +74,14 @@ export const actions: Actions = {
 			redirect(302, "/login");
 		}
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user || user.role !== "admin") {
 			return fail(403, { inviteError: "not authorized" });
 		}
 
 		try {
-			const invite = await api.createInvite(user.id);
-			await api.auditLog(user.id, "create", "invite", invite.id, { code: invite.code }, getClientAddress());
+			const invite = await api.createInvite(user.id, undefined, sessionId);
+			await api.auditLog(user.id, "create", "invite", invite.id, { code: invite.code }, getClientAddress(), sessionId);
 			return { inviteSuccess: "invite created" };
 		} catch (err) {
 			return fail(400, {
@@ -96,7 +96,7 @@ export const actions: Actions = {
 			redirect(302, "/login");
 		}
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user || user.role !== "admin") {
 			return fail(403, { inviteError: "not authorized" });
 		}
@@ -109,8 +109,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.deleteInvite(inviteId);
-			await api.auditLog(user.id, "delete", "invite", inviteId, null, getClientAddress());
+			await api.deleteInvite(inviteId, sessionId);
+			await api.auditLog(user.id, "delete", "invite", inviteId, null, getClientAddress(), sessionId);
 			return { inviteSuccess: "invite deleted" };
 		} catch (err) {
 			return fail(400, {
@@ -130,7 +130,7 @@ export const actions: Actions = {
 			redirect(302, "/login");
 		}
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user || user.role !== "admin") {
 			return fail(403, { eventError: "not authorized" });
 		}
@@ -153,8 +153,8 @@ export const actions: Actions = {
 				type,
 				status,
 				groupName: groupName || null,
-			});
-			await api.auditLog(user.id, "create", "event", event.id, { title, type, status, groupName }, getClientAddress());
+			}, sessionId);
+			await api.auditLog(user.id, "create", "event", event.id, { title, type, status, groupName }, getClientAddress(), sessionId);
 			return { eventSuccess: "event created" };
 		} catch (err) {
 			return fail(400, {
@@ -169,7 +169,7 @@ export const actions: Actions = {
 			redirect(302, "/login");
 		}
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user || user.role !== "admin") {
 			return fail(403, { eventError: "not authorized" });
 		}
@@ -182,8 +182,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.resolveEvent(eventId);
-			await api.auditLog(user.id, "resolve", "event", eventId, null, getClientAddress());
+			await api.resolveEvent(eventId, sessionId);
+			await api.auditLog(user.id, "resolve", "event", eventId, null, getClientAddress(), sessionId);
 			return { eventSuccess: "event resolved" };
 		} catch (err) {
 			return fail(400, {
@@ -198,7 +198,7 @@ export const actions: Actions = {
 			redirect(302, "/login");
 		}
 
-		const user = await api.getUserById(sessionId);
+		const user = await api.getUserById(sessionId, sessionId);
 		if (!user || user.role !== "admin") {
 			return fail(403, { eventError: "not authorized" });
 		}
@@ -211,8 +211,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.deleteEvent(eventId);
-			await api.auditLog(user.id, "delete", "event", eventId, null, getClientAddress());
+			await api.deleteEvent(eventId, sessionId);
+			await api.auditLog(user.id, "delete", "event", eventId, null, getClientAddress(), sessionId);
 			return { eventSuccess: "event deleted" };
 		} catch (err) {
 			return fail(400, {

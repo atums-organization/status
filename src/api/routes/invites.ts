@@ -1,4 +1,7 @@
 import { sql } from "../index";
+import type { Invite } from "../types";
+import { getAuthContext, requireAdmin } from "../utils/auth";
+import { ok, created, noContent, badRequest, forbidden, notFound } from "../utils/response";
 
 function generateCode(): string {
 	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -9,14 +12,32 @@ function generateCode(): string {
 	return code;
 }
 
+function rowToInvite(row: Record<string, unknown>): Invite {
+	return {
+		id: row.id as string,
+		code: row.code as string,
+		createdBy: row.created_by as string,
+		usedBy: row.used_by as string | null,
+		usedByUsername: row.used_by_username as string | null,
+		usedAt: row.used_at as string | null,
+		expiresAt: row.expires_at as string | null,
+		createdAt: row.created_at as string,
+	};
+}
+
 export async function list(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const userId = params?.id;
 	if (!userId) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
 	}
 
 	const rows = await sql`
@@ -35,28 +56,26 @@ export async function list(
 		ORDER BY i.created_at DESC
 	`;
 
-	return Response.json({
-		invites: rows.map((row: Record<string, unknown>) => ({
-			id: row.id,
-			code: row.code,
-			createdBy: row.created_by,
-			usedBy: row.used_by,
-			usedByUsername: row.used_by_username,
-			usedAt: row.used_at,
-			expiresAt: row.expires_at,
-			createdAt: row.created_at,
-		})),
-	});
+	return ok({ invites: rows.map(rowToInvite) });
 }
 
 export async function create(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const userId = params?.id;
 	if (!userId) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
+	}
+
+	if (auth.user.id !== userId) {
+		return forbidden("Cannot create invites for other users");
 	}
 
 	const body = await req.json().catch(() => ({}));
@@ -66,7 +85,7 @@ export async function create(
 	const id = crypto.randomUUID();
 
 	let expiresAt = null;
-	if (expiresInDays && typeof expiresInDays === "number") {
+	if (expiresInDays && typeof expiresInDays === "number" && expiresInDays > 0) {
 		const date = new Date();
 		date.setDate(date.getDate() + expiresInDays);
 		expiresAt = date.toISOString();
@@ -77,30 +96,47 @@ export async function create(
 		VALUES (${id}, ${code}, ${userId}, ${expiresAt})
 	`;
 
-	return Response.json({
-		invite: {
-			id,
-			code,
-			createdBy: userId,
-			expiresAt,
-			createdAt: new Date().toISOString(),
-		},
-	});
+	const rows = await sql`
+		SELECT
+			i.id,
+			i.code,
+			i.created_by,
+			i.used_by,
+			i.used_at,
+			i.expires_at,
+			i.created_at,
+			u.username as used_by_username
+		FROM invites i
+		LEFT JOIN users u ON i.used_by = u.id
+		WHERE i.id = ${id}
+	`;
+
+	return created({ invite: rowToInvite(rows[0]) });
 }
 
 export async function remove(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAdmin(auth)) {
+		return forbidden("Admin access required");
+	}
+
 	const inviteId = params?.id;
 	if (!inviteId) {
-		return Response.json({ error: "Invite ID required" }, { status: 400 });
+		return badRequest("Invite ID required");
+	}
+
+	const existing = await sql`SELECT id FROM invites WHERE id = ${inviteId}`;
+	if (existing.length === 0) {
+		return notFound("Invite not found");
 	}
 
 	await sql`DELETE FROM invites WHERE id = ${inviteId}`;
 
-	return Response.json({ success: true });
+	return noContent();
 }
 
 export async function validate(req: Request): Promise<Response> {
@@ -108,7 +144,7 @@ export async function validate(req: Request): Promise<Response> {
 	const { code } = body;
 
 	if (!code) {
-		return Response.json({ error: "Invite code required" }, { status: 400 });
+		return badRequest("Invite code required");
 	}
 
 	const rows = await sql`
@@ -118,37 +154,46 @@ export async function validate(req: Request): Promise<Response> {
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ valid: false, error: "Invalid invite code" });
+		return ok({ valid: false, error: "Invalid invite code" });
 	}
 
 	const invite = rows[0];
 
 	if (invite.used_by) {
-		return Response.json({ valid: false, error: "Invite already used" });
+		return ok({ valid: false, error: "Invite already used" });
 	}
 
-	if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-		return Response.json({ valid: false, error: "Invite expired" });
+	if (invite.expires_at && new Date(invite.expires_at as string) < new Date()) {
+		return ok({ valid: false, error: "Invite expired" });
 	}
 
-	return Response.json({ valid: true, inviteId: invite.id });
+	return ok({ valid: true, inviteId: invite.id });
 }
 
 export async function markUsed(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
 	const inviteId = params?.id;
 	if (!inviteId) {
-		return Response.json({ error: "Invite ID required" }, { status: 400 });
+		return badRequest("Invite ID required");
 	}
 
 	const body = await req.json();
 	const { userId } = body;
 
 	if (!userId) {
-		return Response.json({ error: "User ID required" }, { status: 400 });
+		return badRequest("User ID required");
+	}
+
+	const existing = await sql`SELECT id, used_by FROM invites WHERE id = ${inviteId}`;
+	if (existing.length === 0) {
+		return notFound("Invite not found");
+	}
+
+	if (existing[0].used_by) {
+		return badRequest("Invite already used");
 	}
 
 	await sql`
@@ -157,5 +202,5 @@ export async function markUsed(
 		WHERE id = ${inviteId}
 	`;
 
-	return Response.json({ success: true });
+	return ok({ message: "Invite marked as used" });
 }

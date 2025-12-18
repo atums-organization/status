@@ -1,5 +1,7 @@
 import { sql } from "../index";
 import type { Service, ServiceCheck } from "../types";
+import { getAuthContext, requireAuth } from "../utils/auth";
+import { ok, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 
 function rowToCheck(row: Record<string, unknown>): ServiceCheck {
 	return {
@@ -82,6 +84,35 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 	};
 }
 
+async function canAccessService(req: Request, serviceId: string): Promise<{ allowed: boolean; service?: Service; response?: Response }> {
+	const rows = await sql`
+		SELECT id, name, description, url, display_url, expected_status, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		FROM services
+		WHERE id = ${serviceId}
+	`;
+
+	if (rows.length === 0) {
+		return { allowed: false, response: notFound("Service not found") };
+	}
+
+	const service = rowToService(rows[0]);
+
+	if (service.isPublic) {
+		return { allowed: true, service };
+	}
+
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return { allowed: false, response: unauthorized() };
+	}
+
+	if (auth.user.id !== service.createdBy && !auth.isAdmin) {
+		return { allowed: false, response: forbidden("Cannot access this service") };
+	}
+
+	return { allowed: true, service };
+}
+
 export async function getForService(
 	req: Request,
 	url: URL,
@@ -89,7 +120,12 @@ export async function getForService(
 ): Promise<Response> {
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const access = await canAccessService(req, serviceId);
+	if (!access.allowed) {
+		return access.response!;
 	}
 
 	const limit = Number(url.searchParams.get("limit")) || 100;
@@ -102,17 +138,22 @@ export async function getForService(
 		LIMIT ${limit}
 	`;
 
-	return Response.json({ checks: rows.map(rowToCheck) });
+	return ok({ checks: rows.map(rowToCheck) });
 }
 
 export async function getStatsForService(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const access = await canAccessService(req, serviceId);
+	if (!access.allowed) {
+		return access.response!;
 	}
 
 	const statsRows = await sql`
@@ -130,10 +171,9 @@ export async function getStatsForService(
 	const stats = statsRows[0] || {};
 	const totalChecks = Number(stats.total_checks) || 0;
 	const successfulChecks = Number(stats.successful_checks) || 0;
-	const uptimePercent =
-		totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 0;
+	const uptimePercent = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 0;
 
-	return Response.json({
+	return ok({
 		stats: {
 			totalChecks,
 			successfulChecks,
@@ -147,12 +187,17 @@ export async function getStatsForService(
 
 export async function getLatestForService(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const access = await canAccessService(req, serviceId);
+	if (!access.allowed) {
+		return access.response!;
 	}
 
 	const rows = await sql`
@@ -163,11 +208,7 @@ export async function getLatestForService(
 		LIMIT 1
 	`;
 
-	if (rows.length === 0) {
-		return Response.json({ check: null });
-	}
-
-	return Response.json({ check: rowToCheck(rows[0]) });
+	return ok({ check: rows.length > 0 ? rowToCheck(rows[0]) : null });
 }
 
 export async function getLatestBatch(req: Request): Promise<Response> {
@@ -175,15 +216,15 @@ export async function getLatestBatch(req: Request): Promise<Response> {
 	const { serviceIds } = body;
 
 	if (!Array.isArray(serviceIds)) {
-		return Response.json(
-			{ error: "serviceIds array required" },
-			{ status: 400 },
-		);
+		return badRequest("serviceIds array required");
 	}
 
 	const checks: Record<string, ServiceCheck | null> = {};
 
 	for (const serviceId of serviceIds) {
+		const access = await canAccessService(req, serviceId);
+		if (!access.allowed) continue;
+
 		const rows = await sql`
 			SELECT id, service_id, status_code, response_time, success, error_message, checked_at
 			FROM service_checks
@@ -195,7 +236,7 @@ export async function getLatestBatch(req: Request): Promise<Response> {
 		checks[serviceId] = rows.length > 0 ? rowToCheck(rows[0]) : null;
 	}
 
-	return Response.json({ checks });
+	return ok({ checks });
 }
 
 export async function getStatsBatch(req: Request): Promise<Response> {
@@ -203,19 +244,19 @@ export async function getStatsBatch(req: Request): Promise<Response> {
 	const { serviceIds } = body;
 
 	if (!Array.isArray(serviceIds)) {
-		return Response.json(
-			{ error: "serviceIds array required" },
-			{ status: 400 },
-		);
+		return badRequest("serviceIds array required");
 	}
 
 	if (serviceIds.length === 0) {
-		return Response.json({ stats: {} });
+		return ok({ stats: {} });
 	}
 
 	const stats: Record<string, { uptimePercent: number; totalChecks: number }> = {};
 
 	for (const serviceId of serviceIds) {
+		const access = await canAccessService(req, serviceId);
+		if (!access.allowed) continue;
+
 		const rows = await sql`
 			SELECT
 				COUNT(*) as total_checks,
@@ -236,17 +277,22 @@ export async function getStatsBatch(req: Request): Promise<Response> {
 		};
 	}
 
-	return Response.json({ stats });
+	return ok({ stats });
 }
 
 export async function runCheck(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
 	}
 
 	const rows = await sql`
@@ -256,23 +302,33 @@ export async function runCheck(
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "Service not found" }, { status: 404 });
+		return notFound("Service not found");
 	}
 
 	const service = rowToService(rows[0]);
+
+	if (service.createdBy !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot run check for this service");
+	}
+
 	const check = await performCheck(service);
 
-	return Response.json({ check });
+	return ok({ check });
 }
 
 export async function startChecker(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
 	}
 
 	const rows = await sql`
@@ -282,10 +338,14 @@ export async function startChecker(
 	`;
 
 	if (rows.length === 0) {
-		return Response.json({ error: "Service not found" }, { status: 404 });
+		return notFound("Service not found");
 	}
 
 	const service = rowToService(rows[0]);
+
+	if (service.createdBy !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot start checker for this service");
+	}
 
 	if (checkIntervals.has(serviceId)) {
 		clearInterval(checkIntervals.get(serviceId));
@@ -299,20 +359,31 @@ export async function startChecker(
 
 	checkIntervals.set(serviceId, interval);
 
-	return Response.json({
-		success: true,
-		message: `Checker started for service ${serviceId}`,
-	});
+	return ok({ message: `Checker started for service ${serviceId}` });
 }
 
 export async function stopChecker(
 	req: Request,
-	url: URL,
+	_url: URL,
 	params?: Record<string, string>,
 ): Promise<Response> {
+	const auth = await getAuthContext(req);
+	if (!requireAuth(auth)) {
+		return unauthorized();
+	}
+
 	const serviceId = params?.id;
 	if (!serviceId) {
-		return Response.json({ error: "Service ID required" }, { status: 400 });
+		return badRequest("Service ID required");
+	}
+
+	const rows = await sql`SELECT created_by FROM services WHERE id = ${serviceId}`;
+	if (rows.length === 0) {
+		return notFound("Service not found");
+	}
+
+	if (rows[0].created_by !== auth.user.id && !auth.isAdmin) {
+		return forbidden("Cannot stop checker for this service");
 	}
 
 	if (checkIntervals.has(serviceId)) {
@@ -320,10 +391,7 @@ export async function stopChecker(
 		checkIntervals.delete(serviceId);
 	}
 
-	return Response.json({
-		success: true,
-		message: `Checker stopped for service ${serviceId}`,
-	});
+	return ok({ message: `Checker stopped for service ${serviceId}` });
 }
 
 export async function initializeCheckers(): Promise<void> {

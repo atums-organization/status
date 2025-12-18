@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		redirect(302, "/login");
 	}
 
-	const user = await api.getUserById(sessionId);
+	const user = await api.getUserById(sessionId, sessionId);
 	if (!user) {
 		clearSession(cookies);
 		redirect(302, "/login");

@@ -237,7 +237,7 @@ export const actions: Actions = {
 		}
 
 		const data = await request.formData();
-		const settings: Record<string, string | boolean> = {};
+		const settings: Record<string, string | boolean | string[]> = {};
 
 		if (data.has("siteName")) settings.siteName = data.get("siteName")?.toString() || "";
 		if (data.has("siteIcon")) settings.siteIcon = data.get("siteIcon")?.toString() || "";
@@ -254,6 +254,13 @@ export const actions: Actions = {
 		if (data.has("_emailForm")) {
 			settings.smtpSecure = data.get("smtpSecure") === "on";
 			settings.smtpEnabled = data.get("smtpEnabled") === "on";
+			settings.emailIsGlobal = data.get("emailIsGlobal")?.toString() === "true";
+			const emailGroupsJson = data.get("emailGroups")?.toString() || "[]";
+			try {
+				settings.emailGroups = JSON.parse(emailGroupsJson);
+			} catch {
+				settings.emailGroups = [];
+			}
 		}
 		if (data.has("emailTo")) settings.emailTo = data.get("emailTo")?.toString() || "";
 
@@ -283,7 +290,14 @@ export const actions: Actions = {
 		const name = data.get("name")?.toString().trim();
 		const url = data.get("url")?.toString().trim();
 		const type = data.get("type")?.toString() as "discord" | "webhook";
-		const groupName = data.get("groupName")?.toString() || null;
+		const isGlobal = data.get("isGlobal")?.toString() === "true";
+		const groupsJson = data.get("groups")?.toString() || "[]";
+		let groups: string[] = [];
+		try {
+			groups = JSON.parse(groupsJson);
+		} catch {
+			groups = [];
+		}
 		const messageDown = data.get("messageDown")?.toString().trim() || "{service} is down";
 		const messageUp = data.get("messageUp")?.toString().trim() || "{service} is back up";
 		const avatarUrl = type === "discord" ? (data.get("avatarUrl")?.toString().trim() || null) : null;
@@ -296,8 +310,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			const webhook = await api.createWebhook({ name, url, type, groupName, messageDown, messageUp, avatarUrl }, sessionId);
-			await api.auditLog(user.id, "create", "webhook", webhook.id, { name, type, groupName }, getClientAddress(), sessionId);
+			const webhook = await api.createWebhook({ name, url, type, isGlobal, groups, messageDown, messageUp, avatarUrl }, sessionId);
+			await api.auditLog(user.id, "create", "webhook", webhook.id, { name, type, isGlobal, groups }, getClientAddress(), sessionId);
 			return { webhookSuccess: "webhook created" };
 		} catch (err) {
 			return fail(400, {
@@ -352,7 +366,14 @@ export const actions: Actions = {
 		const name = data.get("name")?.toString().trim();
 		const url = data.get("url")?.toString().trim();
 		const type = data.get("type")?.toString() as "discord" | "webhook";
-		const groupName = data.get("groupName")?.toString() || null;
+		const isGlobal = data.get("isGlobal")?.toString() === "true";
+		const groupsJson = data.get("groups")?.toString() || "[]";
+		let groups: string[] = [];
+		try {
+			groups = JSON.parse(groupsJson);
+		} catch {
+			groups = [];
+		}
 		const messageDown = data.get("messageDown")?.toString().trim();
 		const messageUp = data.get("messageUp")?.toString().trim();
 		const avatarUrl = type === "discord" ? (data.get("avatarUrl")?.toString().trim() || null) : null;
@@ -368,8 +389,8 @@ export const actions: Actions = {
 		}
 
 		try {
-			await api.updateWebhook(webhookId, { name, url, type, groupName, messageDown, messageUp, avatarUrl }, sessionId);
-			await api.auditLog(user.id, "update", "webhook", webhookId, { name, type, groupName }, getClientAddress(), sessionId);
+			await api.updateWebhook(webhookId, { name, url, type, isGlobal, groups, messageDown, messageUp, avatarUrl }, sessionId);
+			await api.auditLog(user.id, "update", "webhook", webhookId, { name, type, isGlobal, groups }, getClientAddress(), sessionId);
 			return { webhookSuccess: "webhook updated" };
 		} catch (err) {
 			return fail(400, {

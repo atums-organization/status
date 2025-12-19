@@ -9,7 +9,8 @@ function rowToWebhook(row: Record<string, unknown>): Webhook {
 		name: row.name as string,
 		url: row.url as string,
 		type: row.type as WebhookType,
-		groupName: row.group_name as string | null,
+		isGlobal: row.is_global as boolean,
+		groups: (row.groups as string[]) || [],
 		enabled: row.enabled as boolean,
 		messageDown: row.message_down as string,
 		messageUp: row.message_up as string,
@@ -29,9 +30,9 @@ export async function list(req: Request): Promise<Response> {
 	}
 
 	const rows = await sql`
-		SELECT id, name, url, type, group_name, enabled, message_down, message_up, avatar_url, created_at, updated_at
+		SELECT id, name, url, type, is_global, groups, enabled, message_down, message_up, avatar_url, created_at, updated_at
 		FROM webhooks
-		ORDER BY group_name NULLS FIRST, name
+		ORDER BY is_global DESC, name
 	`;
 
 	return ok({ webhooks: rows.map(rowToWebhook) });
@@ -47,7 +48,7 @@ export async function create(req: Request): Promise<Response> {
 	}
 
 	const body = await req.json();
-	const { name, url, type, groupName, messageDown, messageUp, avatarUrl } = body;
+	const { name, url, type, isGlobal, groups, messageDown, messageUp, avatarUrl } = body;
 
 	if (!name || typeof name !== "string") {
 		return badRequest("Name is required");
@@ -60,18 +61,20 @@ export async function create(req: Request): Promise<Response> {
 	}
 
 	const id = crypto.randomUUID();
-	const group = groupName || null;
+	const global = isGlobal === true;
+	const groupList = Array.isArray(groups) ? groups.filter((g): g is string => typeof g === "string") : [];
+	const groupsArray = `{${groupList.map(g => `"${g.replace(/"/g, '\\"')}"`).join(",")}}`;
 	const msgDown = messageDown || "{service} is down";
 	const msgUp = messageUp || "{service} is back up";
 	const avatar = type === "discord" && avatarUrl ? avatarUrl : null;
 
 	await sql`
-		INSERT INTO webhooks (id, name, url, type, group_name, message_down, message_up, avatar_url)
-		VALUES (${id}, ${name}, ${url}, ${type}, ${group}, ${msgDown}, ${msgUp}, ${avatar})
+		INSERT INTO webhooks (id, name, url, type, is_global, groups, message_down, message_up, avatar_url)
+		VALUES (${id}, ${name}, ${url}, ${type}, ${global}, ${groupsArray}::text[], ${msgDown}, ${msgUp}, ${avatar})
 	`;
 
 	const rows = await sql`
-		SELECT id, name, url, type, group_name, enabled, message_down, message_up, avatar_url, created_at, updated_at
+		SELECT id, name, url, type, is_global, groups, enabled, message_down, message_up, avatar_url, created_at, updated_at
 		FROM webhooks WHERE id = ${id}
 	`;
 
@@ -102,75 +105,40 @@ export async function update(
 	}
 
 	const body = await req.json();
-	const { name, url, type, groupName, enabled, messageDown, messageUp, avatarUrl } = body;
-
-	const updates: string[] = [];
-	const values: unknown[] = [];
+	const { name, url, type, isGlobal, groups, enabled, messageDown, messageUp, avatarUrl } = body;
 
 	if (typeof name === "string") {
-		updates.push("name");
-		values.push(name);
+		await sql`UPDATE webhooks SET name = ${name}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (typeof url === "string") {
-		updates.push("url");
-		values.push(url);
+		await sql`UPDATE webhooks SET url = ${url}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (type && ["discord", "webhook"].includes(type)) {
-		updates.push("type");
-		values.push(type);
+		await sql`UPDATE webhooks SET type = ${type}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
-	if (groupName !== undefined) {
-		updates.push("group_name");
-		values.push(groupName || null);
+	if (typeof isGlobal === "boolean") {
+		await sql`UPDATE webhooks SET is_global = ${isGlobal}, updated_at = NOW() WHERE id = ${webhookId}`;
+	}
+	if (Array.isArray(groups)) {
+		const groupList = groups.filter((g): g is string => typeof g === "string");
+		const groupsArray = `{${groupList.map(g => `"${g.replace(/"/g, '\\"')}"`).join(",")}}`;
+		await sql`UPDATE webhooks SET groups = ${groupsArray}::text[], updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (typeof enabled === "boolean") {
-		updates.push("enabled");
-		values.push(enabled);
+		await sql`UPDATE webhooks SET enabled = ${enabled}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (typeof messageDown === "string") {
-		updates.push("message_down");
-		values.push(messageDown);
+		await sql`UPDATE webhooks SET message_down = ${messageDown}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (typeof messageUp === "string") {
-		updates.push("message_up");
-		values.push(messageUp);
+		await sql`UPDATE webhooks SET message_up = ${messageUp}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 	if (avatarUrl !== undefined) {
-		updates.push("avatar_url");
-		values.push(avatarUrl || null);
-	}
-
-	if (updates.length === 0) {
-		return badRequest("No valid fields to update");
-	}
-
-	if (updates.includes("name")) {
-		await sql`UPDATE webhooks SET name = ${values[updates.indexOf("name")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("url")) {
-		await sql`UPDATE webhooks SET url = ${values[updates.indexOf("url")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("type")) {
-		await sql`UPDATE webhooks SET type = ${values[updates.indexOf("type")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("group_name")) {
-		await sql`UPDATE webhooks SET group_name = ${values[updates.indexOf("group_name")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("enabled")) {
-		await sql`UPDATE webhooks SET enabled = ${values[updates.indexOf("enabled")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("message_down")) {
-		await sql`UPDATE webhooks SET message_down = ${values[updates.indexOf("message_down")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("message_up")) {
-		await sql`UPDATE webhooks SET message_up = ${values[updates.indexOf("message_up")]}, updated_at = NOW() WHERE id = ${webhookId}`;
-	}
-	if (updates.includes("avatar_url")) {
-		await sql`UPDATE webhooks SET avatar_url = ${values[updates.indexOf("avatar_url")]}, updated_at = NOW() WHERE id = ${webhookId}`;
+		await sql`UPDATE webhooks SET avatar_url = ${avatarUrl || null}, updated_at = NOW() WHERE id = ${webhookId}`;
 	}
 
 	const rows = await sql`
-		SELECT id, name, url, type, group_name, enabled, message_down, message_up, avatar_url, created_at, updated_at
+		SELECT id, name, url, type, is_global, groups, enabled, message_down, message_up, avatar_url, created_at, updated_at
 		FROM webhooks WHERE id = ${webhookId}
 	`;
 
@@ -206,21 +174,21 @@ export async function remove(
 }
 
 export async function getWebhooksForGroup(groupName: string | null): Promise<Webhook[]> {
+	let rows;
 	if (groupName) {
-		const groupWebhooks = await sql`
-			SELECT id, name, url, type, group_name, enabled, message_down, message_up, avatar_url, created_at, updated_at
+		rows = await sql`
+			SELECT id, name, url, type, is_global, groups, enabled, message_down, message_up, avatar_url, created_at, updated_at
 			FROM webhooks
-			WHERE group_name = ${groupName} AND enabled = true
+			WHERE enabled = true
+			AND (is_global = true OR groups @> ARRAY[${groupName}]::text[])
 		`;
-		if (groupWebhooks.length > 0) {
-			return groupWebhooks.map(rowToWebhook);
-		}
+	} else {
+		rows = await sql`
+			SELECT id, name, url, type, is_global, groups, enabled, message_down, message_up, avatar_url, created_at, updated_at
+			FROM webhooks
+			WHERE enabled = true
+			AND is_global = true
+		`;
 	}
-
-	const globalWebhooks = await sql`
-		SELECT id, name, url, type, group_name, enabled, message_down, message_up, avatar_url, created_at, updated_at
-		FROM webhooks
-		WHERE group_name IS NULL AND enabled = true
-	`;
-	return globalWebhooks.map(rowToWebhook);
+	return rows.map(rowToWebhook);
 }

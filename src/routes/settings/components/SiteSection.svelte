@@ -1,9 +1,9 @@
 <script lang="ts">
 import { enhance } from "$app/forms";
 import { notifications } from "$lib";
-import type { SiteSettings } from "$lib";
+import type { SiteSettings, Group } from "$lib";
 
-const { settings }: { settings: SiteSettings | null } = $props();
+const { settings, groups }: { settings: SiteSettings | null; groups: Group[] } = $props();
 
 let sendingTestEmail = $state(false);
 let testEmailError = $state("");
@@ -60,6 +60,16 @@ const portWarning = $derived.by(() => {
 	return null;
 });
 let emailTo = $state(settings?.emailTo || "");
+let emailIsGlobal = $state(settings?.emailIsGlobal !== false);
+let emailGroups = $state<string[]>(settings?.emailGroups || []);
+
+function toggleEmailGroup(groupName: string) {
+	if (emailGroups.includes(groupName)) {
+		emailGroups = emailGroups.filter(g => g !== groupName);
+	} else {
+		emailGroups = [...emailGroups, groupName];
+	}
+}
 
 $effect(() => {
 	if (settings) {
@@ -78,6 +88,8 @@ $effect(() => {
 		smtpSecure = settings.smtpSecure || false;
 		smtpEnabled = settings.smtpEnabled || false;
 		emailTo = settings.emailTo || "";
+		emailIsGlobal = settings.emailIsGlobal !== false;
+		emailGroups = settings.emailGroups || [];
 	}
 });
 </script>
@@ -196,20 +208,15 @@ $effect(() => {
 		};
 	}}>
 		<input type="hidden" name="_emailForm" value="1" />
-		<div class="form-row">
-			<div class="form-group checkbox-group">
-				<label class="checkbox-label">
-					<input type="checkbox" name="smtpEnabled" bind:checked={smtpEnabled} />
-					enable email notifications
-				</label>
-			</div>
-
-			<div class="form-group checkbox-group">
-				<label class="checkbox-label">
-					<input type="checkbox" name="smtpSecure" bind:checked={smtpSecure} />
-					use ssl/tls
-				</label>
-			</div>
+		<div class="checkbox-group">
+			<label class="checkbox-label">
+				<input type="checkbox" name="smtpEnabled" bind:checked={smtpEnabled} />
+				enable email notifications
+			</label>
+			<label class="checkbox-label">
+				<input type="checkbox" name="smtpSecure" bind:checked={smtpSecure} />
+				use ssl/tls
+			</label>
 		</div>
 
 		<div class="form-group">
@@ -276,6 +283,32 @@ $effect(() => {
 				bind:value={emailTo}
 			/>
 			<label for="emailTo">notification recipient</label>
+		</div>
+
+		<div class="scope-section">
+			<span class="scope-label">scope</span>
+			<input type="hidden" name="emailIsGlobal" value={emailIsGlobal} />
+			<input type="hidden" name="emailGroups" value={JSON.stringify(emailGroups)} />
+			<div class="scope-options">
+				<label class="checkbox-label">
+					<input type="checkbox" bind:checked={emailIsGlobal} />
+					global (all groups)
+				</label>
+				{#if !emailIsGlobal}
+					<div class="group-checkboxes">
+						{#each groups as group (group.id)}
+							<label class="checkbox-label">
+								<input
+									type="checkbox"
+									checked={emailGroups.includes(group.name)}
+									onchange={() => toggleEmailGroup(group.name)}
+								/>
+								{group.name}
+							</label>
+						{/each}
+					</div>
+				{/if}
+			</div>
 		</div>
 
 		<div class="form-actions">

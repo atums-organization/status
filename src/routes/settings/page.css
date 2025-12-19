@@ -571,3 +571,77 @@
 	outline: none;
 	border-color: var(--color-accent);
 }
+
+.scope-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+}
+
+.scope-label {
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+}
+
+.scope-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+}
+
+.scope-options > .checkbox-label {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	border: 1px solid var(--color-border);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	width: fit-content;
+	font-size: var(--text-sm);
+	color: var(--color-text-muted);
+}
+
+.scope-options > .checkbox-label:hover {
+	border-color: var(--color-text-muted);
+	color: var(--color-text-secondary);
+}
+
+.scope-options > .checkbox-label:has(input:checked) {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+.scope-options > .checkbox-label input[type="checkbox"] {
+	display: none;
+}
+
+.group-checkboxes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-xs);
+}
+
+.group-checkboxes .checkbox-label {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	border: 1px solid var(--color-border);
+	font-size: var(--text-xs);
+	cursor: pointer;
+	transition: all var(--transition-fast);
+	color: var(--color-text-muted);
+}
+
+.group-checkboxes .checkbox-label:hover {
+	border-color: var(--color-text-muted);
+	color: var(--color-text-secondary);
+}
+
+.group-checkboxes .checkbox-label:has(input:checked) {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+.group-checkboxes .checkbox-label input[type="checkbox"] {
+	display: none;
+}

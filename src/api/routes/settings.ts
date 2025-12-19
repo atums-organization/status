@@ -14,6 +14,13 @@ export async function getSettings(): Promise<SiteSettings> {
 		map[row.key as string] = row.value as string;
 	}
 
+	let emailGroups: string[] = [];
+	try {
+		emailGroups = JSON.parse(map.email_groups || "[]");
+	} catch {
+		emailGroups = [];
+	}
+
 	return {
 		siteName: map.site_name || "atums/status",
 		siteIcon: map.site_icon || "",
@@ -30,6 +37,8 @@ export async function getSettings(): Promise<SiteSettings> {
 		smtpSecure: map.smtp_secure === "true",
 		smtpEnabled: map.smtp_enabled === "true",
 		emailTo: map.email_to || "",
+		emailIsGlobal: map.email_is_global !== "false",
+		emailGroups,
 	};
 }
 
@@ -64,6 +73,8 @@ export async function update(req: Request): Promise<Response> {
 		smtpSecure,
 		smtpEnabled,
 		emailTo,
+		emailIsGlobal,
+		emailGroups,
 	} = body;
 
 	const updates: Array<{ key: string; value: string }> = [];
@@ -123,6 +134,13 @@ export async function update(req: Request): Promise<Response> {
 	}
 	if (typeof emailTo === "string") {
 		updates.push({ key: "email_to", value: emailTo });
+	}
+	if (typeof emailIsGlobal === "boolean") {
+		updates.push({ key: "email_is_global", value: String(emailIsGlobal) });
+	}
+	if (Array.isArray(emailGroups)) {
+		const groupList = emailGroups.filter((g): g is string => typeof g === "string");
+		updates.push({ key: "email_groups", value: JSON.stringify(groupList) });
 	}
 
 	if (updates.length === 0) {

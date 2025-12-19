@@ -6,10 +6,32 @@ import { sendServiceDown, sendServiceUp } from "../utils/discord";
 import { sendServiceDownEmail, sendServiceUpEmail } from "../utils/email";
 import { broadcastCheck } from "../utils/sse";
 
-async function isGroupEmailEnabled(groupName: string | null): Promise<boolean> {
+async function isEmailEnabledForGroup(groupName: string | null): Promise<boolean> {
+	const settingsRows = await sql`SELECT key, value FROM settings WHERE key IN ('smtp_enabled', 'email_is_global', 'email_groups')`;
+	const map: Record<string, string> = {};
+	for (const row of settingsRows) {
+		map[row.key as string] = row.value as string;
+	}
+
+	if (map.smtp_enabled !== "true") return false;
+
+	let inScope = false;
+	if (map.email_is_global !== "false") {
+		inScope = true;
+	} else if (groupName) {
+		try {
+			const emailGroups = JSON.parse(map.email_groups || "[]");
+			inScope = Array.isArray(emailGroups) && emailGroups.includes(groupName);
+		} catch {
+			inScope = false;
+		}
+	}
+
+	if (!inScope) return false;
+
 	if (!groupName) return false;
-	const rows = await sql`SELECT email_notifications FROM groups WHERE name = ${groupName}`;
-	return rows.length > 0 && rows[0].email_notifications === true;
+	const groupRows = await sql`SELECT email_notifications FROM groups WHERE name = ${groupName}`;
+	return groupRows.length > 0 && groupRows[0].email_notifications === true;
 }
 
 function isServiceEmailEnabled(service: Service): boolean {
@@ -151,7 +173,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 			if (isServiceEmailEnabled(service)) {
 				sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
 			} else {
-				isGroupEmailEnabled(service.groupName).then((enabled) => {
+				isEmailEnabledForGroup(service.groupName).then((enabled) => {
 					if (enabled) {
 						sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
 					}
@@ -162,7 +184,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 			if (isServiceEmailEnabled(service)) {
 				sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
 			} else {
-				isGroupEmailEnabled(service.groupName).then((enabled) => {
+				isEmailEnabledForGroup(service.groupName).then((enabled) => {
 					if (enabled) {
 						sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
 					}
@@ -174,7 +196,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		if (isServiceEmailEnabled(service)) {
 			sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
 		} else {
-			isGroupEmailEnabled(service.groupName).then((enabled) => {
+			isEmailEnabledForGroup(service.groupName).then((enabled) => {
 				if (enabled) {
 					sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
 				}

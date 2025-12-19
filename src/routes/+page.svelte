@@ -1578,7 +1578,7 @@
 							name="enabled"
 							checked={editingService.enabled}
 						/>
-						<span>Enable monitoring</span>
+						enable monitoring
 					</label>
 					<label class="checkbox-label">
 						<input
@@ -1586,7 +1586,7 @@
 							name="isPublic"
 							checked={editingService.isPublic}
 						/>
-						<span>Public (visible to everyone)</span>
+						public (visible to everyone)
 					</label>
 					{#if data.user?.role === "admin"}
 						<label class="checkbox-label">
@@ -1595,7 +1595,7 @@
 								name="emailNotifications"
 								checked={editingService.emailNotifications}
 							/>
-							<span>Email notifications</span>
+							email notifications
 						</label>
 					{/if}
 				</div>
@@ -1760,16 +1760,16 @@
 				<div class="form-group checkbox-group">
 					<label class="checkbox-label">
 						<input type="checkbox" name="enabled" checked />
-						<span>Enable monitoring</span>
+						enable monitoring
 					</label>
 					<label class="checkbox-label">
 						<input type="checkbox" name="isPublic" />
-						<span>Public (visible to everyone)</span>
+						public (visible to everyone)
 					</label>
 					{#if data.user?.role === "admin"}
 						<label class="checkbox-label">
 							<input type="checkbox" name="emailNotifications" />
-							<span>Email notifications</span>
+							email notifications
 						</label>
 					{/if}
 				</div>

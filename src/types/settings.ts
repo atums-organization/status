@@ -14,4 +14,6 @@ export interface SiteSettings {
 	smtpSecure: boolean;
 	smtpEnabled: boolean;
 	emailTo: string;
+	emailIsGlobal: boolean;
+	emailGroups: string[];
 }

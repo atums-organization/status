@@ -5,7 +5,8 @@ export interface Webhook {
 	name: string;
 	url: string;
 	type: WebhookType;
-	groupName: string | null;
+	isGlobal: boolean;
+	groups: string[];
 	enabled: boolean;
 	messageDown: string;
 	messageUp: string;
@@ -18,7 +19,8 @@ export interface CreateWebhookData {
 	name: string;
 	url: string;
 	type: WebhookType;
-	groupName?: string | null;
+	isGlobal?: boolean;
+	groups?: string[];
 	messageDown?: string;
 	messageUp?: string;
 	avatarUrl?: string | null;
@@ -28,7 +30,8 @@ export type UpdateWebhookData = Partial<{
 	name: string;
 	url: string;
 	type: WebhookType;
-	groupName: string | null;
+	isGlobal: boolean;
+	groups: string[];
 	enabled: boolean;
 	messageDown: string;
 	messageUp: string;

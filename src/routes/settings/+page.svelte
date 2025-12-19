@@ -99,7 +99,7 @@ function setTab(tab: string) {
 			{:else if activeTab() === "security"}
 				<PasswordSection />
 			{:else if activeTab() === "site"}
-				<SiteSection settings={data.siteSettings} />
+				<SiteSection settings={data.siteSettings} groups={data.groups} />
 			{:else if activeTab() === "webhooks"}
 				<WebhooksSection webhooks={data.webhooks} groups={data.groups} />
 			{:else if activeTab() === "invites"}

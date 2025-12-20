@@ -45,6 +45,24 @@
 	min-height: 300px;
 }
 
+@media (max-width: 600px) {
+	.tabs {
+		gap: 0;
+		overflow-x: auto;
+		flex-wrap: nowrap;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.tab {
+		flex-shrink: 0;
+	}
+}
+
 .settings-section {
 	margin-bottom: var(--spacing-xl);
 	padding-bottom: var(--spacing-xl);

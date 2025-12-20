@@ -696,35 +696,37 @@
 									<div class="group-actions">
 										<button
 											type="button"
-											class="btn sm"
+											class="btn sm icon-btn"
 											onclick={() => openCreateModal(group.name)}
-											>+ add</button
+											title="Add service"
+											><span class="btn-icon">+</span><span class="btn-text">add</span></button
 										>
 										<button
 											type="button"
-											class="btn sm"
+											class="btn sm icon-btn"
 											disabled={groupIndex === 0}
 											onclick={() => moveGroupUp(group.name)}
-											title="Move up">▲</button
+											title="Move up"><span class="btn-icon">▲</span></button
 										>
 										<button
 											type="button"
-											class="btn sm"
+											class="btn sm icon-btn"
 											disabled={groupIndex === sortedGroups.length - 1}
 											onclick={() => moveGroupDown(group.name)}
-											title="Move down">▼</button
+											title="Move down"><span class="btn-icon">▼</span></button
 										>
 										<button
 											type="button"
-											class="btn sm"
+											class="btn sm icon-btn"
 											onclick={() =>
 												openRenameGroup(group.name)}
-											>rename</button
+											title="Rename group"
+											><span class="btn-icon">/</span><span class="btn-text">rename</span></button
 										>
 										{#if data.user?.role === "admin"}
 											<button
 												type="button"
-												class="btn sm"
+												class="btn sm icon-btn"
 												class:active={group.emailNotifications}
 												onclick={() =>
 													toggleGroupEmail(
@@ -734,17 +736,18 @@
 												title={group.emailNotifications
 													? "Disable email notifications"
 													: "Enable email notifications"}
-												>{group.emailNotifications
-													? "email on"
-													: "email off"}</button
+												><span class="btn-icon">✉</span><span class="btn-text">{group.emailNotifications
+													? "on"
+													: "off"}</span></button
 											>
 										{/if}
 										<button
 											type="button"
-											class="btn sm danger"
+											class="btn sm danger icon-btn"
 											onclick={() =>
 												deleteGroup(group.name)}
-											>delete</button
+											title="Delete group"
+											><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
 										>
 									</div>
 								{/if}
@@ -894,11 +897,12 @@
 										<div class="service-actions">
 											<button
 												type="button"
-												class="btn sm"
+												class="btn sm icon-btn"
+												title="Edit service"
 												onclick={(e) => {
 													e.stopPropagation();
 													editingService = service;
-												}}>edit</button
+												}}><span class="btn-icon">/</span><span class="btn-text">edit</span></button
 											>
 											<form
 												method="POST"
@@ -913,8 +917,9 @@
 												/>
 												<button
 													type="submit"
-													class="btn sm danger"
-													>delete</button
+													class="btn sm danger icon-btn"
+													title="Delete service"
+													><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
 												>
 											</form>
 										</div>
@@ -1041,11 +1046,12 @@
 								<div class="service-actions">
 									<button
 										type="button"
-										class="btn sm"
+										class="btn sm icon-btn"
+										title="Edit service"
 										onclick={(e) => {
 											e.stopPropagation();
 											editingService = service;
-										}}>edit</button
+										}}><span class="btn-icon">/</span><span class="btn-text">edit</span></button
 									>
 									<form
 										method="POST"
@@ -1060,8 +1066,9 @@
 										/>
 										<button
 											type="submit"
-											class="btn sm danger"
-											>delete</button
+											class="btn sm danger icon-btn"
+											title="Delete service"
+											><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
 										>
 									</form>
 								</div>

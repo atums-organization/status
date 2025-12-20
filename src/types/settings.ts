@@ -16,4 +16,5 @@ export interface SiteSettings {
 	emailTo: string;
 	emailIsGlobal: boolean;
 	emailGroups: string[];
+	retryCount: number;
 }

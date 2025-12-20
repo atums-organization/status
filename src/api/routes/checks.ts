@@ -74,6 +74,38 @@ function rowToService(row: Record<string, unknown>): Service {
 
 const checkIntervals = new Map<string, ReturnType<typeof setInterval>>();
 const lastCheckStatus = new Map<string, boolean>();
+const consecutiveFailures = new Map<string, number>();
+const notifiedDown = new Map<string, boolean>();
+
+async function getRetryCount(): Promise<number> {
+	const rows = await sql`SELECT value FROM settings WHERE key = 'retry_count'`;
+	if (rows.length === 0) return 0;
+	return Number.parseInt(rows[0].value as string, 10) || 0;
+}
+
+async function sendDownNotifications(service: Service, statusCode: number | null, errorMessage: string | null): Promise<void> {
+	sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
+	if (isServiceEmailEnabled(service)) {
+		sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+	} else {
+		const enabled = await isEmailEnabledForGroup(service.groupName);
+		if (enabled) {
+			sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
+		}
+	}
+}
+
+async function sendUpNotifications(service: Service, responseTime: number): Promise<void> {
+	sendServiceUp(service.name, service.displayUrl || service.url, service.groupName, responseTime).catch(() => {});
+	if (isServiceEmailEnabled(service)) {
+		sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
+	} else {
+		const enabled = await isEmailEnabledForGroup(service.groupName);
+		if (enabled) {
+			sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
+		}
+	}
+}
 
 function jsonContains(actual: unknown, expected: unknown): boolean {
 	if (typeof expected !== typeof actual) return false;
@@ -164,43 +196,23 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		VALUES (${id}, ${service.id}, ${statusCode}, ${responseTime}, ${success}, ${errorMessage})
 	`;
 
-	const previousStatus = lastCheckStatus.get(service.id);
 	lastCheckStatus.set(service.id, success);
 
-	if (previousStatus !== undefined && previousStatus !== success) {
-		if (success) {
-			sendServiceUp(service.name, service.displayUrl || service.url, service.groupName, responseTime).catch(() => {});
-			if (isServiceEmailEnabled(service)) {
-				sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
-			} else {
-				isEmailEnabledForGroup(service.groupName).then((enabled) => {
-					if (enabled) {
-						sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
-					}
-				});
-			}
-		} else {
-			sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
-			if (isServiceEmailEnabled(service)) {
-				sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-			} else {
-				isEmailEnabledForGroup(service.groupName).then((enabled) => {
-					if (enabled) {
-						sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-					}
-				});
-			}
+	if (success) {
+		const wasNotifiedDown = notifiedDown.get(service.id) || false;
+		consecutiveFailures.set(service.id, 0);
+		if (wasNotifiedDown) {
+			notifiedDown.set(service.id, false);
+			sendUpNotifications(service, responseTime);
 		}
-	} else if (previousStatus === undefined && !success) {
-		sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
-		if (isServiceEmailEnabled(service)) {
-			sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-		} else {
-			isEmailEnabledForGroup(service.groupName).then((enabled) => {
-				if (enabled) {
-					sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-				}
-			});
+	} else {
+		const failures = (consecutiveFailures.get(service.id) || 0) + 1;
+		consecutiveFailures.set(service.id, failures);
+		const retryCount = await getRetryCount();
+		const alreadyNotified = notifiedDown.get(service.id) || false;
+		if (!alreadyNotified && failures > retryCount) {
+			notifiedDown.set(service.id, true);
+			sendDownNotifications(service, statusCode, errorMessage);
 		}
 	}
 

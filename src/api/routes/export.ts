@@ -1,5 +1,5 @@
 import { sql } from "../index";
-import type { ExportData, ExportGroup, ExportService, Service } from "../types";
+import type { ExportData, ExportGroup, ExportService } from "../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 import { startCheckerForService } from "./checks";

@@ -39,6 +39,7 @@ export async function getSettings(): Promise<SiteSettings> {
 		emailTo: map.email_to || "",
 		emailIsGlobal: map.email_is_global !== "false",
 		emailGroups,
+		retryCount: Number.parseInt(map.retry_count || "0", 10) || 0,
 	};
 }
 
@@ -75,6 +76,7 @@ export async function update(req: Request): Promise<Response> {
 		emailTo,
 		emailIsGlobal,
 		emailGroups,
+		retryCount,
 	} = body;
 
 	const updates: Array<{ key: string; value: string }> = [];
@@ -141,6 +143,10 @@ export async function update(req: Request): Promise<Response> {
 	if (Array.isArray(emailGroups)) {
 		const groupList = emailGroups.filter((g): g is string => typeof g === "string");
 		updates.push({ key: "email_groups", value: JSON.stringify(groupList) });
+	}
+	if (typeof retryCount === "number") {
+		const count = Math.max(0, Math.min(10, Math.floor(retryCount)));
+		updates.push({ key: "retry_count", value: String(count) });
 	}
 
 	if (updates.length === 0) {

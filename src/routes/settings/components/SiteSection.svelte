@@ -62,6 +62,7 @@ const portWarning = $derived.by(() => {
 let emailTo = $state(settings?.emailTo || "");
 let emailIsGlobal = $state(settings?.emailIsGlobal !== false);
 let emailGroups = $state<string[]>(settings?.emailGroups || []);
+let retryCount = $state(settings?.retryCount || 0);
 
 function toggleEmailGroup(groupName: string) {
 	if (emailGroups.includes(groupName)) {
@@ -90,6 +91,7 @@ $effect(() => {
 		emailTo = settings.emailTo || "";
 		emailIsGlobal = settings.emailIsGlobal !== false;
 		emailGroups = settings.emailGroups || [];
+		retryCount = settings.retryCount || 0;
 	}
 });
 </script>
@@ -309,6 +311,20 @@ $effect(() => {
 					</div>
 				{/if}
 			</div>
+		</div>
+
+		<div class="form-group">
+			<input
+				type="number"
+				id="retryCount"
+				name="retryCount"
+				placeholder=" "
+				min="0"
+				max="10"
+				bind:value={retryCount}
+			/>
+			<label for="retryCount">retry count (0-10)</label>
+			<p class="field-hint">number of failed checks before sending notifications</p>
 		</div>
 
 		<div class="form-actions">

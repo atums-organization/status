@@ -237,7 +237,7 @@ export const actions: Actions = {
 		}
 
 		const data = await request.formData();
-		const settings: Record<string, string | boolean | string[]> = {};
+		const settings: Record<string, string | boolean | string[] | number> = {};
 
 		if (data.has("siteName")) settings.siteName = data.get("siteName")?.toString() || "";
 		if (data.has("siteIcon")) settings.siteIcon = data.get("siteIcon")?.toString() || "";
@@ -260,6 +260,9 @@ export const actions: Actions = {
 				settings.emailGroups = JSON.parse(emailGroupsJson);
 			} catch {
 				settings.emailGroups = [];
+			}
+			if (data.has("retryCount")) {
+				settings.retryCount = Number.parseInt(data.get("retryCount")?.toString() || "0", 10);
 			}
 		}
 		if (data.has("emailTo")) settings.emailTo = data.get("emailTo")?.toString() || "";

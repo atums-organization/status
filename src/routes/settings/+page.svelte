@@ -20,9 +20,9 @@ const { data }: { data: PageData } = $props();
 const siteIcon = $derived(data.site.icon || favicon);
 
 const validTabs = $derived(() => {
-	const base = ["account", "security"];
+	const base = ["account"];
 	if (data.user.role === "admin") {
-		base.push("site", "webhooks", "invites", "events", "audit", "export");
+		base.push("site", "notifications", "events", "audit", "export");
 	}
 	return base;
 });
@@ -30,13 +30,11 @@ const validTabs = $derived(() => {
 const tabs = $derived(() => {
 	const base = [
 		{ id: "account", label: "account" },
-		{ id: "security", label: "security" },
 	];
 	if (data.user.role === "admin") {
 		base.push(
 			{ id: "site", label: "site" },
-			{ id: "webhooks", label: "webhooks" },
-			{ id: "invites", label: "invites" },
+			{ id: "notifications", label: "notifications" },
 			{ id: "events", label: "events" },
 			{ id: "audit", label: "audit log" },
 			{ id: "export", label: "export" },
@@ -97,15 +95,13 @@ function setTab(tab: string) {
 		<div class="tab-content">
 			{#if activeTab() === "account"}
 				<AccountSection user={data.user} />
-				<SessionSection />
-			{:else if activeTab() === "security"}
 				<PasswordSection />
+				<SessionSection />
 			{:else if activeTab() === "site"}
-				<SiteSection settings={data.siteSettings} groups={data.groups} />
-			{:else if activeTab() === "webhooks"}
-				<WebhooksSection webhooks={data.webhooks} groups={data.groups} />
-			{:else if activeTab() === "invites"}
+				<SiteSection settings={data.siteSettings} />
 				<InvitesSection invites={data.invites} />
+			{:else if activeTab() === "notifications"}
+				<WebhooksSection webhooks={data.webhooks} groups={data.groups} settings={data.siteSettings} />
 			{:else if activeTab() === "events"}
 				<EventsSection events={data.events} groups={data.groups} />
 			{:else if activeTab() === "audit"}

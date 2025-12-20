@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "bun run dev:api & bun run dev:web",
-		"dev:api": "bun run src/api/index.ts",
+		"dev:api": "bun --watch run src/api/index.ts",
 		"dev:web": "bunx vite dev",
 		"build": "bunx vite build",
 		"preview": "bunx vite preview",

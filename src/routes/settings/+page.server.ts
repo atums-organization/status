@@ -448,4 +448,84 @@ export const actions: Actions = {
 			});
 		}
 	},
+
+	exportData: async ({ request, cookies }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			return fail(401, { error: "not logged in" });
+		}
+
+		let user;
+		try {
+			user = await api.getUserById(sessionId, sessionId);
+		} catch (err) {
+			return fail(403, { error: `auth error: ${err instanceof Error ? err.message : "unknown"}` });
+		}
+
+		if (!user) {
+			return fail(403, { error: "user not found" });
+		}
+
+		const data = await request.formData();
+		const exportType = data.get("exportType")?.toString() || "global";
+		const groupName = data.get("groupName")?.toString();
+
+		try {
+			let exportResult;
+			if (exportType === "global") {
+				if (user.role !== "admin") {
+					return fail(403, { error: "admin access required for global export" });
+				}
+				exportResult = await api.exportGlobal(sessionId);
+			} else if (exportType === "group" && groupName) {
+				exportResult = await api.exportGroup(groupName, sessionId);
+			} else {
+				return fail(400, { error: "invalid export parameters" });
+			}
+			return { exportData: JSON.stringify(exportResult) };
+		} catch (err) {
+			console.error("Export error:", err);
+			return fail(400, {
+				error: err instanceof Error ? err.message : "export failed",
+			});
+		}
+	},
+
+	importData: async ({ request, cookies, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) {
+			redirect(302, "/login");
+		}
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			return fail(403, { error: "not authorized" });
+		}
+
+		const data = await request.formData();
+		const importDataStr = data.get("importData")?.toString();
+
+		if (!importDataStr) {
+			return fail(400, { error: "no import data provided" });
+		}
+
+		try {
+			const importData = JSON.parse(importDataStr);
+			const result = await api.importData(importData, sessionId);
+			await api.auditLog(
+				user.id,
+				"import",
+				"data",
+				null,
+				result.stats,
+				getClientAddress(),
+				sessionId,
+			);
+			return result.stats;
+		} catch (err) {
+			return fail(400, {
+				error: err instanceof Error ? err.message : "import failed",
+			});
+		}
+	},
 };

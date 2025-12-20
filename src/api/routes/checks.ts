@@ -531,7 +531,7 @@ export async function stopChecker(
 
 export async function initializeCheckers(): Promise<void> {
 	const rows = await sql`
-		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, group_name, position, created_by, created_at, updated_at
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
 		FROM services
 		WHERE enabled = true
 	`;
@@ -547,4 +547,28 @@ export async function initializeCheckers(): Promise<void> {
 
 		checkIntervals.set(service.id, interval);
 	}
+}
+
+export async function startCheckerForService(serviceId: string): Promise<void> {
+	const rows = await sql`
+		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
+		FROM services
+		WHERE id = ${serviceId} AND enabled = true
+	`;
+
+	if (rows.length === 0) return;
+
+	const service = rowToService(rows[0]);
+
+	if (checkIntervals.has(serviceId)) {
+		clearInterval(checkIntervals.get(serviceId));
+	}
+
+	performCheck(service);
+
+	const interval = setInterval(() => {
+		performCheck(service);
+	}, service.checkInterval * 1000);
+
+	checkIntervals.set(serviceId, interval);
 }

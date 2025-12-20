@@ -2,6 +2,7 @@ import * as audit from "./routes/audit";
 import * as auth from "./routes/auth";
 import * as checks from "./routes/checks";
 import * as events from "./routes/events";
+import * as exportData from "./routes/export";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 import * as settings from "./routes/settings";
@@ -168,6 +169,22 @@ const routes: Route[] = [
 	{
 		pattern: /^\/webhooks\/([^/]+)$/,
 		handlers: { PUT: webhooks.update, DELETE: webhooks.remove },
+	},
+	{
+		pattern: /^\/export\/global$/,
+		handlers: { GET: exportData.exportGlobal },
+	},
+	{
+		pattern: /^\/export\/group\/([^/]+)$/,
+		handlers: { GET: exportData.exportGroup },
+	},
+	{
+		pattern: /^\/export\/service\/([^/]+)$/,
+		handlers: { GET: exportData.exportService },
+	},
+	{
+		pattern: /^\/import$/,
+		handlers: { POST: exportData.importData },
 	},
 ];
 

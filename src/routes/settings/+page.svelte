@@ -13,6 +13,7 @@ import AuditSection from "./components/AuditSection.svelte";
 import SessionSection from "./components/SessionSection.svelte";
 import SiteSection from "./components/SiteSection.svelte";
 import WebhooksSection from "./components/WebhooksSection.svelte";
+import ExportSection from "./components/ExportSection.svelte";
 
 const { data }: { data: PageData } = $props();
 
@@ -21,7 +22,7 @@ const siteIcon = $derived(data.site.icon || favicon);
 const validTabs = $derived(() => {
 	const base = ["account", "security"];
 	if (data.user.role === "admin") {
-		base.push("site", "webhooks", "invites", "events", "audit");
+		base.push("site", "webhooks", "invites", "events", "audit", "export");
 	}
 	return base;
 });
@@ -38,6 +39,7 @@ const tabs = $derived(() => {
 			{ id: "invites", label: "invites" },
 			{ id: "events", label: "events" },
 			{ id: "audit", label: "audit log" },
+			{ id: "export", label: "export" },
 		);
 	}
 	return base;
@@ -108,6 +110,8 @@ function setTab(tab: string) {
 				<EventsSection events={data.events} groups={data.groups} />
 			{:else if activeTab() === "audit"}
 				<AuditSection logs={data.auditLogs} />
+			{:else if activeTab() === "export"}
+				<ExportSection groups={data.groups} />
 			{/if}
 		</div>
 	</main>

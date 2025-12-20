@@ -2,6 +2,8 @@
 
 a simple status monitoring service built with sveltekit and bun.
 
+# view [todo](https://todo.atums.world/share/FWlRpIQz65sU8CDAAsCz694lZkkV0BTX4j5p3vry/auth?view=12)
+
 ## requirements
 
 - [bun](https://bun.sh)

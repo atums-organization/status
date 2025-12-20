@@ -105,7 +105,7 @@ function setTab(tab: string) {
 			{:else if activeTab() === "events"}
 				<EventsSection events={data.events} groups={data.groups} />
 			{:else if activeTab() === "audit"}
-				<AuditSection logs={data.auditLogs} />
+				<AuditSection initialLogs={data.auditLogs} />
 			{:else if activeTab() === "export"}
 				<ExportSection groups={data.groups} />
 			{/if}

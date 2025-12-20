@@ -36,60 +36,57 @@ export async function list(
 		return forbidden("Admin access required");
 	}
 
-	const limit = Number.parseInt(url.searchParams.get("limit") || "50", 10);
+	const limit = Number.parseInt(url.searchParams.get("limit") || "20", 10);
 	const offset = Number.parseInt(url.searchParams.get("offset") || "0", 10);
 	const action = url.searchParams.get("action");
 	const entityType = url.searchParams.get("entityType");
 	const userId = url.searchParams.get("userId");
+	const startDate = url.searchParams.get("startDate");
+	const endDate = url.searchParams.get("endDate");
 
-	let rows;
-	if (action && entityType) {
-		rows = await sql`
-			SELECT a.*, u.username as user_name, u.email as user_email
-			FROM audit_logs a
-			LEFT JOIN users u ON a.user_id = u.id
-			WHERE a.action = ${action} AND a.entity_type = ${entityType}
-			ORDER BY a.created_at DESC
-			LIMIT ${limit} OFFSET ${offset}
-		`;
-	} else if (action) {
-		rows = await sql`
-			SELECT a.*, u.username as user_name, u.email as user_email
-			FROM audit_logs a
-			LEFT JOIN users u ON a.user_id = u.id
-			WHERE a.action = ${action}
-			ORDER BY a.created_at DESC
-			LIMIT ${limit} OFFSET ${offset}
-		`;
-	} else if (entityType) {
-		rows = await sql`
-			SELECT a.*, u.username as user_name, u.email as user_email
-			FROM audit_logs a
-			LEFT JOIN users u ON a.user_id = u.id
-			WHERE a.entity_type = ${entityType}
-			ORDER BY a.created_at DESC
-			LIMIT ${limit} OFFSET ${offset}
-		`;
-	} else if (userId) {
-		rows = await sql`
-			SELECT a.*, u.username as user_name, u.email as user_email
-			FROM audit_logs a
-			LEFT JOIN users u ON a.user_id = u.id
-			WHERE a.user_id = ${userId}
-			ORDER BY a.created_at DESC
-			LIMIT ${limit} OFFSET ${offset}
-		`;
-	} else {
-		rows = await sql`
-			SELECT a.*, u.username as user_name, u.email as user_email
-			FROM audit_logs a
-			LEFT JOIN users u ON a.user_id = u.id
-			ORDER BY a.created_at DESC
-			LIMIT ${limit} OFFSET ${offset}
-		`;
+	const conditions: string[] = [];
+	const values: unknown[] = [];
+
+	if (action) {
+		conditions.push(`a.action = $${values.length + 1}`);
+		values.push(action);
+	}
+	if (entityType) {
+		conditions.push(`a.entity_type = $${values.length + 1}`);
+		values.push(entityType);
+	}
+	if (userId) {
+		conditions.push(`a.user_id = $${values.length + 1}`);
+		values.push(userId);
+	}
+	if (startDate) {
+		conditions.push(`a.created_at >= $${values.length + 1}::timestamp`);
+		values.push(startDate + "T00:00:00.000Z");
+	}
+	if (endDate) {
+		conditions.push(`a.created_at <= $${values.length + 1}::timestamp`);
+		values.push(endDate + "T23:59:59.999Z");
 	}
 
-	return ok({ logs: rows.map(rowToAuditLog) }, { limit, offset });
+	const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+
+	const countResult = await sql.unsafe(
+		`SELECT COUNT(*) as total FROM audit_logs a ${whereClause}`,
+		values,
+	);
+	const total = Number.parseInt(countResult[0]?.total || "0", 10);
+
+	const rows = await sql.unsafe(
+		`SELECT a.*, u.username as user_name, u.email as user_email
+		FROM audit_logs a
+		LEFT JOIN users u ON a.user_id = u.id
+		${whereClause}
+		ORDER BY a.created_at DESC
+		LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
+		[...values, limit, offset],
+	);
+
+	return ok({ logs: rows.map(rowToAuditLog), total, limit, offset });
 }
 
 export async function log(

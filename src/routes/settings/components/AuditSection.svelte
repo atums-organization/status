@@ -2,12 +2,82 @@
 import { formatDateTime } from "$lib";
 import type { AuditLog } from "$lib";
 
-const { logs }: { logs: AuditLog[] } = $props();
+const { initialLogs = [] }: { initialLogs?: AuditLog[] } = $props();
+
+let logs = $state<AuditLog[]>(initialLogs ?? []);
+let loading = $state(true);
+let total = $state(0);
+let page = $state(1);
+let perPage = $state(20);
+let selectedDate = $state("");
+let hasLoaded = $state(false);
+
+const totalPages = $derived(Math.max(1, Math.ceil(total / perPage)));
+
+async function fetchLogs() {
+	loading = true;
+	try {
+		const params = new URLSearchParams();
+		params.set("limit", String(perPage));
+		params.set("offset", String((page - 1) * perPage));
+		if (selectedDate) {
+			params.set("startDate", selectedDate);
+			params.set("endDate", selectedDate);
+		}
+
+		const res = await fetch(`/api/audit?${params.toString()}`);
+		if (res.ok) {
+			const json = await res.json();
+			logs = json.data?.logs ?? [];
+			total = json.data?.total ?? 0;
+		} else {
+			logs = [];
+			total = 0;
+		}
+	} catch (err) {
+		console.error("Failed to fetch audit logs:", err);
+		logs = [];
+		total = 0;
+	} finally {
+		loading = false;
+	}
+}
+
+function handleDateChange() {
+	page = 1;
+	fetchLogs();
+}
+
+function goToPage(newPage: number) {
+	if (newPage >= 1 && newPage <= totalPages) {
+		page = newPage;
+		fetchLogs();
+	}
+}
+
+$effect(() => {
+	if (!hasLoaded) {
+		hasLoaded = true;
+		fetchLogs();
+	}
+});
 </script>
 
 <section class="settings-section">
-	<h3>audit log</h3>
-	{#if logs.length > 0}
+	<div class="audit-header-row">
+		<h3>audit log</h3>
+		<input
+			type="date"
+			bind:value={selectedDate}
+			onchange={handleDateChange}
+			class="date-input"
+			aria-label="Filter by date"
+		/>
+	</div>
+
+	{#if loading}
+		<div class="audit-loading">loading...</div>
+	{:else if logs.length > 0}
 		<div class="audit-list">
 			{#each logs as log (log.id)}
 				<div class="audit-item">
@@ -35,7 +105,33 @@ const { logs }: { logs: AuditLog[] } = $props();
 				</div>
 			{/each}
 		</div>
+
+		{#if totalPages > 1}
+			<div class="audit-pagination">
+				<button
+					type="button"
+					class="btn btn-secondary pagination-btn"
+					disabled={page <= 1}
+					onclick={() => goToPage(page - 1)}
+					aria-label="Previous page"
+				>
+					←
+				</button>
+				<span class="pagination-info">
+					page {page} of {totalPages} ({total} total)
+				</span>
+				<button
+					type="button"
+					class="btn btn-secondary pagination-btn"
+					disabled={page >= totalPages}
+					onclick={() => goToPage(page + 1)}
+					aria-label="Next page"
+				>
+					→
+				</button>
+			</div>
+		{/if}
 	{:else}
-		<p class="no-logs">no audit logs yet</p>
+		<p class="no-logs">{selectedDate ? "no audit logs for this date" : "no audit logs yet"}</p>
 	{/if}
 </section>

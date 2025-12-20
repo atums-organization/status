@@ -302,7 +302,7 @@ function formatGraphDate(date: string): string {
 		</div>
 	</header>
 
-	<main class="main centered">
+	<main id="main-content" class="main centered">
 		{#if overallUptime !== null}
 			<div class="overall-uptime">
 				<span class="uptime-label">group uptime</span>

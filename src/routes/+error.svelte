@@ -29,7 +29,7 @@
 		</nav>
 	</header>
 
-	<main class="main centered">
+	<main id="main-content" class="main centered">
 		<div class="error-page">
 			<span class="error-code">{$page.status}</span>
 			<h2 class="error-title">

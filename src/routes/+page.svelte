@@ -624,7 +624,7 @@
 		</div>
 	</header>
 
-	<main class="main centered" class:edit-mode={editMode}>
+	<main id="main-content" class="main centered" class:edit-mode={editMode}>
 		{#if !data.services?.length}
 			<div class="empty">
 				{#if data.user}
@@ -699,21 +699,24 @@
 											class="btn sm icon-btn"
 											onclick={() => openCreateModal(group.name)}
 											title="Add service"
-											><span class="btn-icon">+</span><span class="btn-text">add</span></button
+											aria-label="Add service to {group.name}"
+											><span class="btn-icon" aria-hidden="true">+</span><span class="btn-text">add</span></button
 										>
 										<button
 											type="button"
 											class="btn sm icon-btn"
 											disabled={groupIndex === 0}
 											onclick={() => moveGroupUp(group.name)}
-											title="Move up"><span class="btn-icon">▲</span></button
+											title="Move up"
+											aria-label="Move {group.name} up"><span class="btn-icon" aria-hidden="true">▲</span></button
 										>
 										<button
 											type="button"
 											class="btn sm icon-btn"
 											disabled={groupIndex === sortedGroups.length - 1}
 											onclick={() => moveGroupDown(group.name)}
-											title="Move down"><span class="btn-icon">▼</span></button
+											title="Move down"
+											aria-label="Move {group.name} down"><span class="btn-icon" aria-hidden="true">▼</span></button
 										>
 										<button
 											type="button"
@@ -721,7 +724,8 @@
 											onclick={() =>
 												openRenameGroup(group.name)}
 											title="Rename group"
-											><span class="btn-icon">/</span><span class="btn-text">rename</span></button
+											aria-label="Rename {group.name}"
+											><span class="btn-icon" aria-hidden="true">/</span><span class="btn-text">rename</span></button
 										>
 										{#if data.user?.role === "admin"}
 											<button
@@ -736,7 +740,11 @@
 												title={group.emailNotifications
 													? "Disable email notifications"
 													: "Enable email notifications"}
-												><span class="btn-icon">✉</span><span class="btn-text">{group.emailNotifications
+												aria-label={group.emailNotifications
+													? `Disable email notifications for ${group.name}`
+													: `Enable email notifications for ${group.name}`}
+												aria-pressed={group.emailNotifications}
+												><span class="btn-icon" aria-hidden="true">✉</span><span class="btn-text">{group.emailNotifications
 													? "on"
 													: "off"}</span></button
 											>
@@ -747,7 +755,8 @@
 											onclick={() =>
 												deleteGroup(group.name)}
 											title="Delete group"
-											><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
+											aria-label="Delete {group.name}"
+											><span class="btn-icon" aria-hidden="true">✕</span><span class="btn-text">delete</span></button
 										>
 									</div>
 								{/if}
@@ -807,9 +816,12 @@
 												group.name,
 											)}
 										onclick={() => openServiceDetail(service)}
-										onkeydown={(e) =>
-											e.key === "Enter" &&
-											openServiceDetail(service)}
+										onkeydown={(e) => {
+											if (e.key === "Enter" || e.key === " ") {
+												e.preventDefault();
+												openServiceDetail(service);
+											}
+										}}
 										role="button"
 										tabindex="0"
 									>
@@ -899,10 +911,11 @@
 												type="button"
 												class="btn sm icon-btn"
 												title="Edit service"
+												aria-label="Edit {service.name}"
 												onclick={(e) => {
 													e.stopPropagation();
 													editingService = service;
-												}}><span class="btn-icon">/</span><span class="btn-text">edit</span></button
+												}}><span class="btn-icon" aria-hidden="true">/</span><span class="btn-text">edit</span></button
 											>
 											<form
 												method="POST"
@@ -919,7 +932,8 @@
 													type="submit"
 													class="btn sm danger icon-btn"
 													title="Delete service"
-													><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
+													aria-label="Delete {service.name}"
+													><span class="btn-icon" aria-hidden="true">✕</span><span class="btn-text">delete</span></button
 												>
 											</form>
 										</div>
@@ -964,8 +978,12 @@
 								}}
 								ondrop={(e) => handleServiceDrop(e, service, null)}
 								onclick={() => openServiceDetail(service)}
-								onkeydown={(e) =>
-									e.key === "Enter" && openServiceDetail(service)}
+								onkeydown={(e) => {
+									if (e.key === "Enter" || e.key === " ") {
+										e.preventDefault();
+										openServiceDetail(service);
+									}
+								}}
 								role="button"
 								tabindex="0"
 							>
@@ -1048,10 +1066,11 @@
 										type="button"
 										class="btn sm icon-btn"
 										title="Edit service"
+										aria-label="Edit {service.name}"
 										onclick={(e) => {
 											e.stopPropagation();
 											editingService = service;
-										}}><span class="btn-icon">/</span><span class="btn-text">edit</span></button
+										}}><span class="btn-icon" aria-hidden="true">/</span><span class="btn-text">edit</span></button
 									>
 									<form
 										method="POST"
@@ -1068,7 +1087,8 @@
 											type="submit"
 											class="btn sm danger icon-btn"
 											title="Delete service"
-											><span class="btn-icon">✕</span><span class="btn-text">delete</span></button
+											aria-label="Delete {service.name}"
+											><span class="btn-icon" aria-hidden="true">✕</span><span class="btn-text">delete</span></button
 										>
 									</form>
 								</div>
@@ -1110,7 +1130,7 @@
 							: "degraded"}
 					</span>
 				</div>
-				<button type="button" class="modal-close" onclick={closeModal}
+				<button type="button" class="modal-close" onclick={closeModal} aria-label="Close modal"
 					>&times;</button
 				>
 			</div>
@@ -1452,12 +1472,13 @@
 				<button
 					type="button"
 					class="modal-close"
-					onclick={closeEditModal}>&times;</button
+					onclick={closeEditModal}
+					aria-label="Close modal">&times;</button
 				>
 			</div>
 
 			{#if form?.editError}
-				<div class="error-message">{form.editError}</div>
+				<div class="error-message" role="alert">{form.editError}</div>
 			{/if}
 
 			<form
@@ -1640,12 +1661,13 @@
 				<button
 					type="button"
 					class="modal-close"
-					onclick={closeCreateModal}>&times;</button
+					onclick={closeCreateModal}
+					aria-label="Close modal">&times;</button
 				>
 			</div>
 
 			{#if form?.createError}
-				<div class="error-message">{form.createError}</div>
+				<div class="error-message" role="alert">{form.createError}</div>
 			{/if}
 
 			<form

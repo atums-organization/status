@@ -16,10 +16,15 @@ function getIcon(type: NotificationType): string {
 }
 </script>
 
-<div class="notifications">
+<div class="notifications" aria-live="polite" aria-label="Notifications">
 	{#each notifications.list as notification (notification.id)}
-		<button class="notification {notification.type}" onclick={() => notifications.remove(notification.id)}>
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+		<button
+			class="notification {notification.type}"
+			onclick={() => notifications.remove(notification.id)}
+			role={notification.type === "error" ? "alert" : "status"}
+			aria-label="{notification.type}: {notification.message}. Click to dismiss"
+		>
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 				<path stroke-linecap="round" stroke-linejoin="round" d={getIcon(notification.type)} />
 			</svg>
 			<span class="message">{notification.message}</span>

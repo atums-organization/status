@@ -3,6 +3,8 @@
 
 	const { user }: { user: User } = $props();
 	let open = $state(false);
+	let menuRef = $state<HTMLDivElement | null>(null);
+	let triggerRef = $state<HTMLButtonElement | null>(null);
 
 	function toggle() {
 		open = !open;
@@ -11,17 +13,57 @@
 	function close() {
 		open = false;
 	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === "Escape" && open) {
+			close();
+			triggerRef?.focus();
+		} else if (e.key === "ArrowDown" && open) {
+			e.preventDefault();
+			const firstItem = menuRef?.querySelector<HTMLElement>('[role="menuitem"]');
+			firstItem?.focus();
+		} else if (e.key === "ArrowUp" && open) {
+			e.preventDefault();
+			const items = menuRef?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+			items?.[items.length - 1]?.focus();
+		}
+	}
+
+	function handleMenuKeydown(e: KeyboardEvent) {
+		const items = Array.from(menuRef?.querySelectorAll<HTMLElement>('[role="menuitem"]') || []);
+		const currentIndex = items.indexOf(e.target as HTMLElement);
+
+		if (e.key === "ArrowDown") {
+			e.preventDefault();
+			const nextIndex = (currentIndex + 1) % items.length;
+			items[nextIndex]?.focus();
+		} else if (e.key === "ArrowUp") {
+			e.preventDefault();
+			const prevIndex = (currentIndex - 1 + items.length) % items.length;
+			items[prevIndex]?.focus();
+		} else if (e.key === "Escape") {
+			close();
+			triggerRef?.focus();
+		} else if (e.key === "Tab") {
+			close();
+		}
+	}
 </script>
 
 <svelte:window onclick={close} />
 
-<div class="menu">
+<div class="menu" onkeydown={handleKeydown} role="presentation">
 	<button
+		bind:this={triggerRef}
 		class="trigger"
 		onclick={(e) => {
 			e.stopPropagation();
 			toggle();
 		}}
+		aria-haspopup="menu"
+		aria-expanded={open}
+		aria-controls="user-menu"
+		aria-label="User menu for {user.username}"
 	>
 		<span class="username">{user.username}</span>
 		<svg
@@ -31,6 +73,7 @@
 			fill="none"
 			stroke="currentColor"
 			stroke-width="2"
+			aria-hidden="true"
 		>
 			<path
 				stroke-linecap="round"
@@ -41,18 +84,28 @@
 	</button>
 
 	{#if open}
-		<div class="dropdown">
-			<div class="dropdown-header">
+		<div
+			bind:this={menuRef}
+			id="user-menu"
+			class="dropdown"
+			role="menu"
+			aria-label="User menu"
+			tabindex="-1"
+			onkeydown={handleMenuKeydown}
+		>
+			<div class="dropdown-header" role="presentation">
 				<span class="dropdown-username">{user.username}</span>
 				<span class="dropdown-role">{user.role}</span>
 			</div>
-			<div class="dropdown-divider"></div>
-			<a href="/settings" class="dropdown-item">settings</a>
-			<div class="dropdown-divider"></div>
+			<div class="dropdown-divider" role="separator"></div>
+			<a href="/settings" class="dropdown-item" role="menuitem" tabindex="-1">settings</a>
+			<div class="dropdown-divider" role="separator"></div>
 			<form method="POST" action="/settings?/logout">
 				<button
 					type="submit"
 					class="dropdown-item logout"
+					role="menuitem"
+					tabindex="-1"
 					onclick={(e) => e.stopPropagation()}>logout</button
 				>
 			</form>
@@ -150,12 +203,15 @@
 		transition: all var(--transition-fast);
 	}
 
-	.dropdown-item:hover {
+	.dropdown-item:hover,
+	.dropdown-item:focus {
 		background: var(--color-bg-hover);
 		color: var(--color-text);
+		outline: none;
 	}
 
-	.dropdown-item.logout:hover {
+	.dropdown-item.logout:hover,
+	.dropdown-item.logout:focus {
 		color: var(--color-accent);
 	}
 </style>

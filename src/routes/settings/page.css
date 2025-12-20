@@ -223,8 +223,13 @@
 }
 
 .event-form .select-group select:focus {
-	outline: none;
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+.event-form .select-group select:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .events-list {
@@ -447,8 +452,13 @@
 }
 
 .webhook-form .select-group select:focus {
-	outline: none;
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+.webhook-form .select-group select:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .webhook-section-title {
@@ -586,8 +596,13 @@
 }
 
 .webhook-edit-form .select-group select:focus {
-	outline: none;
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+.webhook-edit-form .select-group select:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .scope-section {
@@ -729,6 +744,12 @@
 
 .export-options .select-group select:focus,
 .import-options .select-group select:focus {
-	outline: none;
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+.export-options .select-group select:focus:not(:focus-visible),
+.import-options .select-group select:focus:not(:focus-visible) {
+	outline: none;
 }

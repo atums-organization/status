@@ -8,7 +8,7 @@
 </script>
 
 <div class="login-container">
-	<div class="card">
+	<main id="main-content" class="card">
 		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
 
 		{#if !data.isFirstUser}
@@ -21,7 +21,7 @@
 		{/if}
 
 		{#if form?.error}
-			<div class="error">{form.error}</div>
+			<div class="error" role="alert">{form.error}</div>
 		{/if}
 
 		{#if page === "login"}
@@ -125,5 +125,5 @@
 				Need an account? Ask an admin for an invite code.
 			</p>
 		{/if}
-	</div>
+	</main>
 </div>

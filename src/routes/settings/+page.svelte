@@ -76,7 +76,7 @@ function setTab(tab: string) {
 		</div>
 	</header>
 
-	<main class="main narrow">
+	<main id="main-content" class="main narrow">
 		<h2>settings</h2>
 
 		<div class="tabs">

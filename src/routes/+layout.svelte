@@ -12,5 +12,6 @@ const iconUrl = $derived(data.site.icon || favicon);
 	<link rel="icon" href={iconUrl} />
 </svelte:head>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <Notifications />
 {@render children()}

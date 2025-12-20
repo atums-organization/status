@@ -97,8 +97,13 @@
 }
 
 .group-rename-input:focus {
-	outline: none;
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+.group-rename-input:focus:not(:focus-visible) {
+	outline: none;
 }
 
 .edit-mode .service-card {

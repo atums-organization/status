@@ -101,13 +101,14 @@ input {
 	transition: border-color var(--transition-fast);
 }
 
-input:focus,
-input:not(:placeholder-shown) {
-	outline: none;
-}
-
 input:focus {
 	border-color: var(--color-accent);
+	outline: 2px solid var(--color-accent);
+	outline-offset: -1px;
+}
+
+input:focus:not(:focus-visible) {
+	outline: none;
 }
 
 input:focus + label,

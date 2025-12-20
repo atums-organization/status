@@ -33,6 +33,12 @@ bun run build
 bun run start
 ```
 
+## docker
+
+```sh
+docker pull registry.heliopolis.live/atums/status:latest
+```
+
 ## license
 
 bsd-3-clause

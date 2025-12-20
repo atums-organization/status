@@ -30,7 +30,7 @@ const siteIcon = $derived(data.site.icon || favicon);
 		</div>
 	</header>
 
-	<main class="main">
+	<main id="main-content" class="main">
 		<div class="welcome">
 			<h2>Welcome back, {data.user.username}</h2>
 			<p>Your services will appear here once configured.</p>

@@ -17,6 +17,7 @@ const totalPages = $derived(Math.max(1, Math.ceil(total / perPage)));
 async function fetchLogs() {
 	loading = true;
 	try {
+		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams();
 		params.set("limit", String(perPage));
 		params.set("offset", String((page - 1) * perPage));

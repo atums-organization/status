@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { ExportData, ExportGroup, ExportService } from "../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
@@ -206,7 +207,7 @@ export async function importData(req: Request): Promise<Response> {
 				stats.groupsRenamed++;
 			}
 
-			const id = crypto.randomUUID();
+			const id = randomUUIDv7();
 			await sql`
 				INSERT INTO groups (id, name, position, email_notifications)
 				VALUES (${id}, ${uniqueName}, ${group.position}, ${group.emailNotifications})
@@ -226,7 +227,7 @@ export async function importData(req: Request): Promise<Response> {
 				const groupExists = await sql`SELECT id FROM groups WHERE name = ${groupName}`;
 				if (groupExists.length === 0) {
 					if (requireAdmin(auth)) {
-						const groupId = crypto.randomUUID();
+						const groupId = randomUUIDv7();
 						const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM groups`;
 						await sql`
 							INSERT INTO groups (id, name, position)
@@ -239,7 +240,7 @@ export async function importData(req: Request): Promise<Response> {
 				}
 			}
 
-			const id = crypto.randomUUID();
+			const id = randomUUIDv7();
 			const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM services`;
 			const position = service.position ?? maxPosResult[0]?.next_pos ?? 0;
 

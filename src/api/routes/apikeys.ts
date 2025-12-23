@@ -1,14 +1,15 @@
+import { CryptoHasher, randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { ApiKey, ApiKeyScope } from "../../types";
 import { getAuthContext, requireAuth } from "../utils/auth";
 import { ok, created, badRequest, unauthorized, forbidden, notFound } from "../utils/response";
 
 function generateApiKey(): string {
-	return `sk_${Bun.randomUUIDv7()}`;
+	return `sk_${randomUUIDv7()}`;
 }
 
 function hashKey(key: string): string {
-	return new Bun.CryptoHasher("sha256").update(key).digest("hex");
+	return new CryptoHasher("sha256").update(key).digest("hex");
 }
 
 function rowToApiKey(row: Record<string, unknown>): ApiKey {
@@ -57,7 +58,7 @@ export async function create(req: Request): Promise<Response> {
 		return badRequest("At least one scope is required");
 	}
 
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	const key = generateApiKey();
 	const keyHash = hashKey(key);
 	const keyPrefix = key.substring(0, 7) + "...";

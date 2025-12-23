@@ -1,10 +1,11 @@
+import { randomUUIDv7 } from "bun";
 import type { ServiceCheck, SSEClient } from "../../types";
 
 const clients: Map<string, SSEClient> = new Map();
 const encoder = new TextEncoder();
 
 export function addClient(controller: ReadableStreamDefaultController<Uint8Array>): string {
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	clients.set(id, { id, controller });
 	return id;
 }

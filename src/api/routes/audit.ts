@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { AuditLog } from "../types";
 import { getAuthContext, requireAdmin, requireAuth } from "../utils/auth";
@@ -97,7 +98,7 @@ export async function log(
 	details: Record<string, unknown> | null = null,
 	ipAddress: string | null = null,
 ): Promise<void> {
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	await sql`
 		INSERT INTO audit_logs (id, user_id, action, entity_type, entity_id, details, ip_address)
 		VALUES (${id}, ${userId}, ${action}, ${entityType}, ${entityId}, ${details ? JSON.stringify(details) : null}::jsonb, ${ipAddress})

@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { Group, Service } from "../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
@@ -158,7 +159,7 @@ export async function create(req: Request): Promise<Response> {
 		return badRequest("Invalid URL format");
 	}
 
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	const createdBy = auth.user.id;
 
 	const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM services`;
@@ -370,7 +371,7 @@ export async function upsertGroup(req: Request): Promise<Response> {
 	if (existing.length > 0) {
 		await sql`UPDATE groups SET position = ${position ?? 0} WHERE name = ${name}`;
 	} else {
-		const id = crypto.randomUUID();
+		const id = randomUUIDv7();
 		const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM groups`;
 		const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
 		await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${nextPosition})`;
@@ -398,7 +399,7 @@ export async function updateGroupPositions(req: Request): Promise<Response> {
 		if (existing.length > 0) {
 			await sql`UPDATE groups SET position = ${position} WHERE name = ${name}`;
 		} else {
-			const id = crypto.randomUUID();
+			const id = randomUUIDv7();
 			await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${position})`;
 		}
 	}
@@ -472,7 +473,7 @@ export async function updateGroupEmailNotifications(req: Request): Promise<Respo
 
 	const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
 	if (existing.length === 0) {
-		const id = crypto.randomUUID();
+		const id = randomUUIDv7();
 		await sql`INSERT INTO groups (id, name, position, email_notifications) VALUES (${id}, ${name}, 0, ${emailNotifications})`;
 	} else {
 		await sql`UPDATE groups SET email_notifications = ${emailNotifications} WHERE name = ${name}`;

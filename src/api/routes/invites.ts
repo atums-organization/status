@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { Invite } from "../types";
 import { getAuthContext, requireAdmin } from "../utils/auth";
@@ -82,7 +83,7 @@ export async function create(
 	const expiresInDays = body.expiresInDays;
 
 	const code = generateCode();
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 
 	let expiresAt = null;
 	if (expiresInDays && typeof expiresInDays === "number" && expiresInDays > 0) {

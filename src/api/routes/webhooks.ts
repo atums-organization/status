@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { Webhook, WebhookType } from "../../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
@@ -60,7 +61,7 @@ export async function create(req: Request): Promise<Response> {
 		return badRequest("Type must be 'discord' or 'webhook'");
 	}
 
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	const global = isGlobal === true;
 	const groupList = Array.isArray(groups) ? groups.filter((g): g is string => typeof g === "string") : [];
 	const groupsArray = `{${groupList.map(g => `"${g.replace(/"/g, '\\"')}"`).join(",")}}`;

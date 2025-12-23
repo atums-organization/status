@@ -1,18 +1,14 @@
+import { CryptoHasher, randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import { getAuthContext, requireAuth } from "../utils/auth";
 import { ok, created, badRequest, unauthorized, forbidden, notFound, conflict } from "../utils/response";
 
-async function hashPassword(password: string): Promise<string> {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(password);
-	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-	const hashArray = Array.from(new Uint8Array(hashBuffer));
-	return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+function hashPassword(password: string): string {
+	return new CryptoHasher("sha256").update(password).digest("hex");
 }
 
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-	const passwordHash = await hashPassword(password);
-	return passwordHash === hash;
+function verifyPassword(password: string, hash: string): boolean {
+	return hashPassword(password) === hash;
 }
 
 export async function login(req: Request): Promise<Response> {
@@ -34,7 +30,7 @@ export async function login(req: Request): Promise<Response> {
 	}
 
 	const row = rows[0];
-	const valid = await verifyPassword(password, row.password_hash as string);
+	const valid = verifyPassword(password, row.password_hash as string);
 
 	if (!valid) {
 		return unauthorized("Invalid credentials");
@@ -75,8 +71,8 @@ export async function register(req: Request): Promise<Response> {
 		return conflict("Username or email already exists");
 	}
 
-	const id = crypto.randomUUID();
-	const passwordHash = await hashPassword(password);
+	const id = randomUUIDv7();
+	const passwordHash = hashPassword(password);
 
 	await sql`
 		INSERT INTO users (id, username, email, password_hash, role)
@@ -179,12 +175,12 @@ export async function changePassword(
 		return notFound("User not found");
 	}
 
-	const valid = await verifyPassword(currentPassword, rows[0].password_hash as string);
+	const valid = verifyPassword(currentPassword, rows[0].password_hash as string);
 	if (!valid) {
 		return unauthorized("Current password is incorrect");
 	}
 
-	const newHash = await hashPassword(newPassword);
+	const newHash = hashPassword(newPassword);
 	await sql`
 		UPDATE users SET password_hash = ${newHash} WHERE id = ${id}
 	`;

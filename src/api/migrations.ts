@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { CryptoHasher, file, Glob } from "bun";
 import { resolve } from "node:path";
 import { Echo } from "@atums/echo";
 import type { SQL } from "bun";
@@ -14,8 +14,8 @@ export async function runMigrations(sql: SQL): Promise<void> {
 		const upPath = resolve(migrationsPath, "up");
 		const downPath = resolve(migrationsPath, "down");
 
-		const upFiles = await readdir(upPath);
-		const sqlFiles = upFiles.filter((file) => file.endsWith(".sql")).sort();
+		const glob = new Glob("*.sql");
+		const sqlFiles = Array.from(glob.scanSync(upPath)).sort();
 
 		for (const sqlFile of sqlFiles) {
 			const baseName = sqlFile.replace(".sql", "");
@@ -25,16 +25,14 @@ export async function runMigrations(sql: SQL): Promise<void> {
 
 			if (!id || id.trim() === "") continue;
 
-			const upSql = await readFile(resolve(upPath, sqlFile), "utf-8");
+			const upSql = await file(resolve(upPath, sqlFile)).text();
 			let downSql: string | undefined;
 
 			try {
-				const downFiles = await readdir(downPath);
-				const matchingDown = downFiles.find((file) =>
-					file.startsWith(`${id}_`),
-				);
-				if (matchingDown) {
-					downSql = await readFile(resolve(downPath, matchingDown), "utf-8");
+				const downGlob = new Glob(`${id}_*.sql`);
+				const downFiles = Array.from(downGlob.scanSync(downPath));
+				if (downFiles.length > 0) {
+					downSql = await file(resolve(downPath, downFiles[0])).text();
 				}
 			} catch {}
 
@@ -90,11 +88,5 @@ export async function runMigrations(sql: SQL): Promise<void> {
 }
 
 function generateChecksum(input: string): string {
-	let hash = 0;
-	for (let i = 0; i < input.length; i++) {
-		const char = input.charCodeAt(i);
-		hash = (hash << 5) - hash + char;
-		hash = hash & hash;
-	}
-	return hash.toString(16);
+	return new CryptoHasher("sha256").update(input).digest("hex");
 }

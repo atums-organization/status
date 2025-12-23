@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { Service, ServiceCheck } from "../types";
 import { getAuthContext, requireAuth } from "../utils/auth";
@@ -215,7 +216,7 @@ async function performSingleCheck(service: Service, timeoutMs: number): Promise<
 }
 
 async function performCheck(service: Service): Promise<ServiceCheck> {
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	const timeoutMs = await getCheckTimeout();
 
 	let result = await performSingleCheck(service, timeoutMs);

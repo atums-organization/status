@@ -1,3 +1,4 @@
+import { randomUUIDv7 } from "bun";
 import { sql } from "../index";
 import type { StatusEvent } from "../types";
 import { getAuthContext, requireAdmin } from "../utils/auth";
@@ -131,7 +132,7 @@ export async function create(
 	const eventType = validTypes.includes(type) ? type : "incident";
 	const eventStatus = validStatuses.includes(status) ? status : "ongoing";
 
-	const id = crypto.randomUUID();
+	const id = randomUUIDv7();
 	const eventStartedAt = startedAt || new Date().toISOString();
 
 	await sql`

@@ -11,3 +11,6 @@ export type { Webhook, WebhookType, CreateWebhookData, UpdateWebhookData, EmbedF
 export type { ApiResponse, AuthContext, RouteHandler, Route, RequestOptions } from "./api";
 export type { SSEMessage, CheckUpdateHandler, SSEClient } from "./sse";
 export type { ExportType, ExportData, ExportGroup, ExportService } from "./export";
+export type { ApiKey, ApiKeyWithKey, ApiKeyScope } from "./apikey";
+export { API_SCOPES } from "./apikey";
+export type { DocsEndpoint, DocsCategory } from "./docs";

@@ -14,6 +14,7 @@ import SessionSection from "./components/SessionSection.svelte";
 import SiteSection from "./components/SiteSection.svelte";
 import WebhooksSection from "./components/WebhooksSection.svelte";
 import ExportSection from "./components/ExportSection.svelte";
+import ApiKeysSection from "./components/ApiKeysSection.svelte";
 
 const { data }: { data: PageData } = $props();
 
@@ -96,6 +97,7 @@ function setTab(tab: string) {
 			{#if activeTab() === "account"}
 				<AccountSection user={data.user} />
 				<PasswordSection />
+				<ApiKeysSection />
 				<SessionSection />
 			{:else if activeTab() === "site"}
 				<SiteSection settings={data.siteSettings} />

@@ -1,4 +1,5 @@
 import type { User } from "./user";
+import type { ApiKeyScope } from "./apikey";
 
 export interface ApiResponse<T = unknown> {
 	success: boolean;
@@ -15,6 +16,8 @@ export interface AuthContext {
 	user: User | null;
 	isAuthenticated: boolean;
 	isAdmin: boolean;
+	apiKeyScopes?: ApiKeyScope[];
+	apiKeyId?: string;
 }
 
 export type RouteHandler = (

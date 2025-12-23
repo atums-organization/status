@@ -1,0 +1,470 @@
+[
+	{
+		"category": "authentication",
+		"routes": [
+			{
+				"method": "POST",
+				"path": "/auth/login",
+				"desc": "login with username/email and password",
+				"request": "{\n  \"username\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"username\": \"user\",\n      \"email\": \"user@example.com\",\n      \"role\": \"user\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    },\n    \"sessionId\": \"uuid\"\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/auth/register",
+				"desc": "register a new user (requires invite code)",
+				"request": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"inviteCode\": \"ABC123\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"username\": \"newuser\",\n      \"email\": \"newuser@example.com\",\n      \"role\": \"user\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    },\n    \"sessionId\": \"uuid\"\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/auth/first-user",
+				"desc": "check if this is the first user (no invite needed)",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"isFirstUser\": true }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/auth/user/:id",
+				"desc": "get user by id",
+				"scopes": ["session"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid\",\n      \"username\": \"user\",\n      \"email\": \"user@example.com\",\n      \"role\": \"admin\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    }\n  }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/auth/user/:id/password",
+				"desc": "change user password",
+				"scopes": ["session"],
+				"request": "{\n  \"currentPassword\": \"oldpass\",\n  \"newPassword\": \"newpass123\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Password updated\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "services",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/services",
+				"desc": "list all services (admin only)",
+				"scopes": ["services:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"services\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"API Server\",\n        \"url\": \"https://api.example.com/health\",\n        \"displayUrl\": \"api.example.com\",\n        \"expectedStatus\": 200,\n        \"checkInterval\": 60,\n        \"enabled\": true,\n        \"isPublic\": true,\n        \"groupName\": \"Production\",\n        \"position\": 0\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/services/public",
+				"desc": "list public services",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"services\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"Website\",\n        \"displayUrl\": \"example.com\",\n        \"isPublic\": true,\n        \"groupName\": \"Production\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/services/user/:id",
+				"desc": "list services by user",
+				"scopes": ["services:read"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"services\": [...] }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/services",
+				"desc": "create a new service",
+				"scopes": ["services:write"],
+				"request": "{\n  \"name\": \"My API\",\n  \"url\": \"https://api.example.com/health\",\n  \"displayUrl\": \"api.example.com\",\n  \"expectedStatus\": 200,\n  \"checkInterval\": 60,\n  \"enabled\": true,\n  \"isPublic\": true,\n  \"groupName\": \"Production\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"service\": { \"id\": \"uuid\", ... } }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/services/:id",
+				"desc": "get service by id (public services accessible without auth)",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"service\": {\n      \"id\": \"uuid\",\n      \"name\": \"API Server\",\n      \"url\": \"https://api.example.com/health\",\n      \"displayUrl\": \"api.example.com\",\n      \"expectedStatus\": 200,\n      \"expectedContentType\": \"application/json\",\n      \"expectedBody\": null,\n      \"checkInterval\": 60,\n      \"enabled\": true,\n      \"isPublic\": true,\n      \"emailNotifications\": true,\n      \"groupName\": \"Production\",\n      \"position\": 0,\n      \"createdBy\": \"uuid\",\n      \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n    }\n  }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/services/:id",
+				"desc": "update a service",
+				"scopes": ["services:write"],
+				"request": "{\n  \"name\": \"Updated Name\",\n  \"enabled\": false\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"service\": { ... } }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/services/:id",
+				"desc": "delete a service",
+				"scopes": ["services:write"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Service deleted\" }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/services/positions",
+				"desc": "update service positions",
+				"scopes": ["services:write"],
+				"request": "{\n  \"positions\": [\n    { \"id\": \"uuid1\", \"position\": 0 },\n    { \"id\": \"uuid2\", \"position\": 1 }\n  ]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Positions updated\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "groups",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/groups",
+				"desc": "list all groups",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"groups\": [\n      {\n        \"name\": \"Production\",\n        \"position\": 0,\n        \"collapsed\": false,\n        \"emailNotifications\": true\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/groups",
+				"desc": "create or update a group",
+				"scopes": ["groups:write"],
+				"request": "{\n  \"name\": \"New Group\",\n  \"position\": 0,\n  \"collapsed\": false\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"group\": { ... } }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/groups/positions",
+				"desc": "update group positions",
+				"scopes": ["groups:write"],
+				"request": "{\n  \"positions\": [\n    { \"name\": \"Group1\", \"position\": 0 },\n    { \"name\": \"Group2\", \"position\": 1 }\n  ]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Positions updated\" }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/groups/rename",
+				"desc": "rename a group",
+				"scopes": ["groups:write"],
+				"request": "{\n  \"oldName\": \"Old Name\",\n  \"newName\": \"New Name\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Group renamed\" }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/groups/delete",
+				"desc": "delete a group",
+				"scopes": ["groups:write"],
+				"request": "{\n  \"name\": \"Group to Delete\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Group deleted\" }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/groups/email",
+				"desc": "update group email notification settings",
+				"scopes": ["groups:write", "admin"],
+				"request": "{\n  \"name\": \"Production\",\n  \"emailNotifications\": true\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Email notifications updated\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "checks",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/checks/service/:id",
+				"desc": "get check history for a service",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"checks\": [\n      {\n        \"id\": \"uuid\",\n        \"serviceId\": \"uuid\",\n        \"statusCode\": 200,\n        \"responseTime\": 150,\n        \"success\": true,\n        \"errorMessage\": null,\n        \"checkedAt\": \"2025-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/checks/service/:id/latest",
+				"desc": "get latest check for a service",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"check\": {\n      \"id\": \"uuid\",\n      \"serviceId\": \"uuid\",\n      \"statusCode\": 200,\n      \"responseTime\": 150,\n      \"success\": true,\n      \"errorMessage\": null,\n      \"checkedAt\": \"2025-01-01T00:00:00.000Z\"\n    }\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/checks/service/:id/stats",
+				"desc": "get 24h stats for a service",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"stats\": {\n      \"totalChecks\": 1440,\n      \"successfulChecks\": 1435,\n      \"uptimePercent\": 99.65,\n      \"avgResponseTime\": 145,\n      \"minResponseTime\": 98,\n      \"maxResponseTime\": 520\n    }\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/checks/service/:id",
+				"desc": "run a manual check",
+				"scopes": ["checks:write"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"check\": {\n      \"statusCode\": 200,\n      \"responseTime\": 150,\n      \"success\": true\n    }\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/checks/batch",
+				"desc": "get latest checks for multiple services",
+				"request": "{\n  \"serviceIds\": [\"uuid1\", \"uuid2\", \"uuid3\"]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"checks\": {\n      \"uuid1\": { \"statusCode\": 200, \"success\": true, ... },\n      \"uuid2\": { \"statusCode\": 200, \"success\": true, ... }\n    }\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/checks/stats/batch",
+				"desc": "get stats for multiple services",
+				"request": "{\n  \"serviceIds\": [\"uuid1\", \"uuid2\"]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"stats\": {\n      \"uuid1\": { \"uptimePercent\": 99.9, ... },\n      \"uuid2\": { \"uptimePercent\": 100, ... }\n    }\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/checker/start/:id",
+				"desc": "start the checker for a service",
+				"scopes": ["checks:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Checker started\" }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/checker/stop/:id",
+				"desc": "stop the checker for a service",
+				"scopes": ["checks:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Checker stopped\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "events",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/events",
+				"desc": "list all events",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"events\": [\n      {\n        \"id\": \"uuid\",\n        \"title\": \"Scheduled Maintenance\",\n        \"description\": \"Database upgrade\",\n        \"type\": \"maintenance\",\n        \"status\": \"scheduled\",\n        \"groupName\": \"Production\",\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n        \"resolvedAt\": null\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/events/active",
+				"desc": "list active (unresolved) events",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"events\": [...] }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/events/stream",
+				"desc": "sse stream for real-time updates",
+				"response": "event: status\ndata: {\"serviceId\":\"uuid\",\"success\":true,\"responseTime\":150}\n\nevent: event\ndata: {\"id\":\"uuid\",\"title\":\"Incident\",\"status\":\"ongoing\"}"
+			},
+			{
+				"method": "POST",
+				"path": "/events",
+				"desc": "create an event",
+				"scopes": ["events:write", "admin"],
+				"request": "{\n  \"title\": \"Scheduled Maintenance\",\n  \"description\": \"Database upgrade\",\n  \"type\": \"maintenance\",\n  \"status\": \"scheduled\",\n  \"groupName\": \"Production\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"event\": { \"id\": \"uuid\", ... } }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/events/:id",
+				"desc": "get event by id",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"event\": { ... } }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/events/:id",
+				"desc": "update an event",
+				"scopes": ["events:write", "admin"],
+				"request": "{\n  \"title\": \"Updated Title\",\n  \"status\": \"ongoing\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"event\": { ... } }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/events/:id",
+				"desc": "delete an event",
+				"scopes": ["events:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Event deleted\" }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/events/:id/resolve",
+				"desc": "resolve an event",
+				"scopes": ["events:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"event\": { \"resolvedAt\": \"2025-01-01T00:00:00.000Z\", ... } }\n}"
+			}
+		]
+	},
+	{
+		"category": "invites",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/invites/user/:id",
+				"desc": "list invites created by user",
+				"scopes": ["invites:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"invites\": [\n      {\n        \"id\": \"uuid\",\n        \"code\": \"ABC123\",\n        \"createdBy\": \"uuid\",\n        \"usedBy\": null,\n        \"expiresAt\": \"2025-02-01T00:00:00.000Z\",\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/invites/user/:id",
+				"desc": "create an invite",
+				"scopes": ["invites:write", "admin"],
+				"request": "{\n  \"expiresAt\": \"2025-02-01T00:00:00.000Z\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"invite\": { \"code\": \"XYZ789\", ... } }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/invites/:id",
+				"desc": "delete an invite",
+				"scopes": ["invites:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Invite deleted\" }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/invites/validate",
+				"desc": "validate an invite code",
+				"request": "{\n  \"code\": \"ABC123\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"valid\": true, \"invite\": { ... } }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/invites/:id/use",
+				"desc": "mark invite as used",
+				"request": "{\n  \"userId\": \"uuid\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Invite marked as used\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "webhooks",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/webhooks",
+				"desc": "list all webhooks",
+				"scopes": ["webhooks:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"webhooks\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"Discord Alerts\",\n        \"url\": \"https://discord.com/api/webhooks/...\",\n        \"type\": \"discord\",\n        \"enabled\": true,\n        \"isGlobal\": true,\n        \"groups\": [],\n        \"messageDown\": \"{service} is down!\",\n        \"messageUp\": \"{service} is back up\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/webhooks",
+				"desc": "create a webhook",
+				"scopes": ["webhooks:write", "admin"],
+				"request": "{\n  \"name\": \"Discord Alerts\",\n  \"url\": \"https://discord.com/api/webhooks/...\",\n  \"type\": \"discord\",\n  \"isGlobal\": true,\n  \"groups\": [],\n  \"messageDown\": \"{service} is down!\",\n  \"messageUp\": \"{service} is back up\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"webhook\": { \"id\": \"uuid\", ... } }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/webhooks/:id",
+				"desc": "update a webhook",
+				"scopes": ["webhooks:write", "admin"],
+				"request": "{\n  \"enabled\": false\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"webhook\": { ... } }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/webhooks/:id",
+				"desc": "delete a webhook",
+				"scopes": ["webhooks:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Webhook deleted\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "audit log",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/audit",
+				"desc": "list audit logs. query params: limit, offset, startDate, endDate, action, entityType, userId",
+				"scopes": ["audit:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"logs\": [\n      {\n        \"id\": \"uuid\",\n        \"userId\": \"uuid\",\n        \"action\": \"create\",\n        \"entityType\": \"service\",\n        \"entityId\": \"uuid\",\n        \"details\": { \"name\": \"New Service\" },\n        \"ipAddress\": \"192.168.1.1\",\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n        \"userName\": \"admin\",\n        \"userEmail\": \"admin@example.com\"\n      }\n    ],\n    \"total\": 150,\n    \"limit\": 20,\n    \"offset\": 0\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/audit",
+				"desc": "create an audit log entry",
+				"scopes": ["session"],
+				"request": "{\n  \"userId\": \"uuid\",\n  \"action\": \"custom\",\n  \"entityType\": \"service\",\n  \"entityId\": \"uuid\",\n  \"details\": { \"note\": \"Manual entry\" }\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Audit log created\" }\n}"
+			}
+		]
+	},
+	{
+		"category": "settings",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/settings",
+				"desc": "get site settings",
+				"scopes": ["settings:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"settings\": {\n      \"siteName\": \"Status\",\n      \"siteUrl\": \"https://status.example.com\",\n      \"smtpEnabled\": false,\n      ...\n    }\n  }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/settings",
+				"desc": "update site settings",
+				"scopes": ["settings:write", "admin"],
+				"request": "{\n  \"siteName\": \"My Status Page\",\n  \"siteUrl\": \"https://status.example.com\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Settings updated\" }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/settings/test-email",
+				"desc": "send a test email",
+				"scopes": ["settings:write", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"Test email sent\" }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/.well-known/security.txt",
+				"desc": "get security.txt",
+				"response": "Contact: security@example.com\nCanonical: https://example.com/.well-known/security.txt"
+			}
+		]
+	},
+	{
+		"category": "export / import",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/export/global",
+				"desc": "export all data",
+				"scopes": ["export:read", "admin"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"version\": 1,\n    \"exportedAt\": \"2025-01-01T00:00:00.000Z\",\n    \"groups\": [...],\n    \"services\": [...],\n    \"settings\": {...}\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/export/group/:name",
+				"desc": "export a group and its services",
+				"scopes": ["export:read"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"group\": { \"name\": \"Production\", ... },\n    \"services\": [...]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/export/service/:id",
+				"desc": "export a single service",
+				"scopes": ["export:read"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"service\": { ... }\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/import",
+				"desc": "import data",
+				"scopes": ["import:write", "admin"],
+				"request": "{\n  \"version\": 1,\n  \"groups\": [...],\n  \"services\": [...]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"stats\": {\n      \"groupsCreated\": 2,\n      \"servicesCreated\": 5\n    }\n  }\n}"
+			}
+		]
+	},
+	{
+		"category": "api keys",
+		"routes": [
+			{
+				"method": "GET",
+				"path": "/api-keys",
+				"desc": "list your api keys (session auth only)",
+				"scopes": ["session"],
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"apiKeys\": [\n      {\n        \"id\": \"uuid\",\n        \"userId\": \"uuid\",\n        \"name\": \"My API Key\",\n        \"keyPrefix\": \"sk_abc...\",\n        \"scopes\": [\"services:read\", \"checks:read\"],\n        \"lastUsedAt\": \"2025-01-01T00:00:00.000Z\",\n        \"expiresAt\": null,\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "POST",
+				"path": "/api-keys",
+				"desc": "create an api key. the key is only shown once! (session auth only)",
+				"scopes": ["session"],
+				"request": "{\n  \"name\": \"My API Key\",\n  \"scopes\": [\"services:read\", \"checks:read\"],\n  \"expiresAt\": \"2025-12-31T00:00:00.000Z\"\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"apiKey\": { ... },\n    \"key\": \"sk_abc123...\"\n  }\n}"
+			},
+			{
+				"method": "PUT",
+				"path": "/api-keys/:id",
+				"desc": "update an api key (session auth only)",
+				"scopes": ["session"],
+				"request": "{\n  \"name\": \"Renamed Key\",\n  \"scopes\": [\"services:read\"]\n}",
+				"response": "{\n  \"success\": true,\n  \"data\": { \"apiKey\": { ... } }\n}"
+			},
+			{
+				"method": "DELETE",
+				"path": "/api-keys/:id",
+				"desc": "delete an api key (session auth only)",
+				"scopes": ["session"],
+				"response": "{\n  \"success\": true,\n  \"data\": { \"message\": \"API key deleted\" }\n}"
+			}
+		]
+	}
+]

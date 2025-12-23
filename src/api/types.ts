@@ -1,4 +1,7 @@
 export type {
+	ApiKey,
+	ApiKeyScope,
+	ApiKeyWithKey,
 	ApiResponse,
 	AuditLog,
 	AuthContext,

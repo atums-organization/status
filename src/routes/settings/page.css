@@ -807,3 +807,339 @@
 .import-options .select-group select:focus:not(:focus-visible) {
 	outline: none;
 }
+
+.section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--spacing-md);
+}
+
+.section-header h3 {
+	margin: 0;
+}
+
+.api-keys-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-sm);
+}
+
+.api-key-item {
+	padding: var(--spacing-sm) var(--spacing-md);
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+}
+
+.api-key-header {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	flex-wrap: wrap;
+}
+
+.api-key-name {
+	font-weight: var(--font-medium);
+}
+
+.api-key-prefix {
+	font-size: var(--text-xs);
+	color: var(--color-text-muted);
+	background: var(--color-bg);
+	padding: 2px 6px;
+	border: 1px solid var(--color-border);
+}
+
+.api-key-header .btn {
+	margin-left: auto;
+}
+
+.api-key-meta {
+	display: flex;
+	gap: var(--spacing-md);
+	margin-top: var(--spacing-xs);
+	font-size: var(--text-xs);
+	color: var(--color-text-muted);
+	flex-wrap: wrap;
+}
+
+.api-key-meta .expired {
+	color: var(--color-error);
+}
+
+.api-key-scopes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-xs);
+	margin-top: var(--spacing-sm);
+}
+
+.scope-badge {
+	font-size: var(--text-xs);
+	padding: 1px 5px;
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	color: var(--color-text-secondary);
+}
+
+.no-keys {
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	margin: 0;
+}
+
+.loading {
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+.create-form {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	padding: var(--spacing-md);
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-md);
+}
+
+.create-form .form-row {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: var(--spacing-md);
+}
+
+.create-form .form-group {
+	position: static;
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.create-form .form-group > label,
+.create-form .form-group > .form-label {
+	position: static;
+	transform: none;
+	left: auto;
+	top: auto;
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+	text-transform: lowercase;
+	display: block;
+	pointer-events: auto;
+	background: transparent;
+	padding: 0;
+}
+
+.create-form input[type="text"],
+.create-form input[type="date"] {
+	width: 100%;
+	padding: var(--spacing-sm);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	font-family: inherit;
+	box-sizing: border-box;
+}
+
+.create-form input[type="date"] {
+	color-scheme: dark;
+}
+
+.create-form input:focus {
+	border-color: var(--color-accent);
+	outline: none;
+}
+
+.scopes-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.scopes-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.scope-btn {
+	font-size: var(--text-xs);
+	padding: 2px 6px;
+	font-family: var(--font-mono);
+	background: transparent;
+	border: 1px solid var(--color-border);
+	color: var(--color-text-muted);
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.scope-btn:hover {
+	border-color: var(--color-text-muted);
+	color: var(--color-text-secondary);
+}
+
+.scope-btn.active {
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+@media (max-width: 600px) {
+	.create-form .form-row {
+		grid-template-columns: 1fr;
+	}
+
+	.scope-category {
+		flex: 1 1 100%;
+	}
+}
+
+.form-actions {
+	display: flex;
+	gap: var(--spacing-sm);
+	justify-content: flex-end;
+	padding-top: var(--spacing-md);
+	border-top: 1px solid var(--color-border);
+}
+
+.created-key-box {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-success);
+	padding: var(--spacing-md);
+}
+
+.created-key-box p {
+	margin: 0 0 var(--spacing-sm) 0;
+}
+
+.key-display {
+	display: flex;
+	gap: var(--spacing-sm);
+	align-items: center;
+	margin-bottom: var(--spacing-sm);
+}
+
+.key-display code {
+	flex: 1;
+	padding: var(--spacing-sm);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	font-size: var(--text-sm);
+	word-break: break-all;
+}
+
+.created-key-box .warning {
+	color: var(--color-warning);
+	font-size: var(--text-sm);
+}
+
+.btn-sm {
+	padding: var(--spacing-xs) var(--spacing-sm);
+	font-size: var(--text-xs);
+}
+
+.btn-danger {
+	color: var(--color-error);
+	border-color: var(--color-error);
+}
+
+.btn-danger:hover {
+	background: var(--color-error);
+	color: var(--color-bg);
+}
+
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.8);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: var(--spacing-md);
+}
+
+.modal {
+	background: var(--color-bg-elevated);
+	border: 1px solid var(--color-border);
+	padding: var(--spacing-lg);
+	max-width: 500px;
+	width: 100%;
+}
+
+.modal h3 {
+	margin: 0 0 var(--spacing-sm);
+	font-size: var(--text-base);
+	font-weight: var(--font-medium);
+}
+
+.modal-warning {
+	color: var(--color-warning);
+	font-size: var(--text-sm);
+	margin: 0 0 var(--spacing-md);
+}
+
+.modal .key-display {
+	display: flex;
+	gap: var(--spacing-sm);
+	align-items: center;
+	margin-bottom: var(--spacing-md);
+}
+
+.modal .key-display code {
+	flex: 1;
+	padding: var(--spacing-sm);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	font-size: var(--text-xs);
+	word-break: break-all;
+	font-family: var(--font-mono);
+}
+
+.modal .key-display .btn {
+	padding: var(--spacing-sm);
+	font-size: var(--text-xs);
+}
+
+.confirm-section {
+	margin-bottom: var(--spacing-md);
+}
+
+.confirm-section label {
+	display: block;
+	font-size: var(--text-sm);
+	color: var(--color-text-secondary);
+	margin-bottom: var(--spacing-xs);
+}
+
+.confirm-row {
+	display: flex;
+	gap: var(--spacing-sm);
+	align-items: center;
+}
+
+.confirm-hint {
+	font-size: var(--text-sm);
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+}
+
+.confirm-row input {
+	flex: 1;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	background: var(--color-bg);
+	border: 1px solid var(--color-border);
+	color: var(--color-text);
+	font-size: var(--text-sm);
+	font-family: var(--font-mono);
+}
+
+.confirm-row input:focus {
+	border-color: var(--color-accent);
+	outline: none;
+}
+
+.modal-actions {
+	display: flex;
+	justify-content: flex-end;
+}

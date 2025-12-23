@@ -580,6 +580,7 @@
 			<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
 			<nav class="nav">
 				<a href="/" class="nav-link active">index</a>
+				<a href="/docs" class="nav-link">docs</a>
 				{#if data.site.sourceUrl}
 					<a
 						href={data.site.sourceUrl}

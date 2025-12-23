@@ -83,6 +83,12 @@ async function getRetryCount(): Promise<number> {
 	return Number.parseInt(rows[0].value as string, 10) || 0;
 }
 
+async function getCheckTimeout(): Promise<number> {
+	const rows = await sql`SELECT value FROM settings WHERE key = 'check_timeout'`;
+	if (rows.length === 0) return 30000;
+	return Number.parseInt(rows[0].value as string, 10) || 30000;
+}
+
 async function sendDownNotifications(service: Service, statusCode: number | null, errorMessage: string | null): Promise<void> {
 	sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
 	if (isServiceEmailEnabled(service)) {
@@ -129,17 +135,20 @@ function jsonContains(actual: unknown, expected: unknown): boolean {
 	return true;
 }
 
-async function performCheck(service: Service): Promise<ServiceCheck> {
-	const id = crypto.randomUUID();
+async function performSingleCheck(service: Service, timeoutMs: number): Promise<{
+	statusCode: number | null;
+	success: boolean;
+	errorMessage: string | null;
+	responseTime: number;
+}> {
 	const startTime = performance.now();
-
 	let statusCode: number | null = null;
 	let success = false;
 	let errorMessage: string | null = null;
 
 	try {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), 30000);
+		const timeoutId = setTimeout(() => controller.abort("timeout"), timeoutMs);
 
 		const response = await fetch(service.url, {
 			method: "GET",
@@ -147,7 +156,7 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 			headers: { "User-Agent": "atums-status/1.0" },
 		});
 
-		clearTimeout(timeout);
+		clearTimeout(timeoutId);
 		statusCode = response.status;
 
 		const errors: string[] = [];
@@ -185,11 +194,38 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 			errorMessage = errors.join("; ");
 		}
 	} catch (err) {
-		errorMessage = err instanceof Error ? err.message : "Unknown error";
+		if (err instanceof Error) {
+			if (err.name === "AbortError") {
+				errorMessage = "Request timed out";
+			} else {
+				errorMessage = err.message;
+			}
+		} else {
+			errorMessage = "Unknown error";
+		}
 		success = false;
 	}
 
-	const responseTime = Math.round(performance.now() - startTime);
+	return {
+		statusCode,
+		success,
+		errorMessage,
+		responseTime: Math.round(performance.now() - startTime),
+	};
+}
+
+async function performCheck(service: Service): Promise<ServiceCheck> {
+	const id = crypto.randomUUID();
+	const timeoutMs = await getCheckTimeout();
+
+	let result = await performSingleCheck(service, timeoutMs);
+
+	if (!result.success && (result.errorMessage === "Request timed out" || result.errorMessage === "The operation was aborted.")) {
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		result = await performSingleCheck(service, timeoutMs);
+	}
+
+	const { statusCode, success, errorMessage, responseTime } = result;
 
 	await sql`
 		INSERT INTO service_checks (id, service_id, status_code, response_time, success, error_message)

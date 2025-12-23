@@ -1,3 +1,4 @@
+import * as apikeys from "./routes/apikeys";
 import * as audit from "./routes/audit";
 import * as auth from "./routes/auth";
 import * as checks from "./routes/checks";
@@ -186,6 +187,14 @@ const routes: Route[] = [
 		pattern: /^\/import$/,
 		handlers: { POST: exportData.importData },
 	},
+	{
+		pattern: /^\/api-keys$/,
+		handlers: { GET: apikeys.list, POST: apikeys.create },
+	},
+	{
+		pattern: /^\/api-keys\/([^/]+)$/,
+		handlers: { PUT: apikeys.update, DELETE: apikeys.remove },
+	},
 ];
 
 export async function router(
@@ -195,7 +204,7 @@ export async function router(
 ): Promise<Response> {
 	let path = url.pathname;
 
-	if (basePath && path.startsWith(basePath)) {
+	if (basePath && (path === basePath || path.startsWith(basePath + "/"))) {
 		path = path.slice(basePath.length) || "/";
 	}
 

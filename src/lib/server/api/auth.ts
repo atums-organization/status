@@ -13,10 +13,11 @@ export async function register(
 	username: string,
 	email: string,
 	password: string,
+	inviteCode?: string,
 ): Promise<User> {
 	const result = await request<{ user: User }>("/auth/register", {
 		method: "POST",
-		body: JSON.stringify({ username, email, password }),
+		body: JSON.stringify({ username, email, password, inviteCode }),
 	});
 	return result.user;
 }

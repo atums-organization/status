@@ -49,7 +49,7 @@ export async function login(req: Request): Promise<Response> {
 
 export async function register(req: Request): Promise<Response> {
 	const body = await req.json();
-	const { username, email, password, role = "viewer" } = body;
+	const { username, email, password, inviteCode, role = "viewer" } = body;
 
 	if (!username || !email || !password) {
 		return badRequest("Username, email, and password required");
@@ -61,7 +61,37 @@ export async function register(req: Request): Promise<Response> {
 
 	const countResult = await sql`SELECT COUNT(*) as count FROM users`;
 	const count = Number(countResult[0]?.count ?? 0);
-	const assignedRole = count === 0 ? "admin" : role;
+	const isFirstUser = count === 0;
+	const assignedRole = isFirstUser ? "admin" : role;
+
+	let inviteId: string | null = null;
+	if (!isFirstUser) {
+		if (!inviteCode) {
+			return badRequest("Invite code required");
+		}
+
+		const inviteRows = await sql`
+			SELECT id, used_by, expires_at
+			FROM invites
+			WHERE code = ${inviteCode.toUpperCase()}
+		`;
+
+		if (inviteRows.length === 0) {
+			return badRequest("Invalid invite code");
+		}
+
+		const invite = inviteRows[0];
+
+		if (invite.used_by) {
+			return badRequest("Invite code already used");
+		}
+
+		if (invite.expires_at && new Date(invite.expires_at as string) < new Date()) {
+			return badRequest("Invite code expired");
+		}
+
+		inviteId = invite.id as string;
+	}
 
 	const existing = await sql`
 		SELECT id FROM users WHERE username = ${username} OR email = ${email}
@@ -78,6 +108,14 @@ export async function register(req: Request): Promise<Response> {
 		INSERT INTO users (id, username, email, password_hash, role)
 		VALUES (${id}, ${username}, ${email}, ${passwordHash}, ${assignedRole})
 	`;
+
+	if (inviteId) {
+		await sql`
+			UPDATE invites
+			SET used_by = ${id}, used_at = NOW()
+			WHERE id = ${inviteId}
+		`;
+	}
 
 	return created({
 		user: {

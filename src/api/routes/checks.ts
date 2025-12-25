@@ -90,27 +90,22 @@ async function getCheckTimeout(): Promise<number> {
 	return Number.parseInt(rows[0].value as string, 10) || 30000;
 }
 
+async function shouldSendEmail(service: Service): Promise<boolean> {
+	if (isServiceEmailEnabled(service)) return true;
+	return await isEmailEnabledForGroup(service.groupName);
+}
+
 async function sendDownNotifications(service: Service, statusCode: number | null, errorMessage: string | null): Promise<void> {
 	sendServiceDown(service.name, service.displayUrl || service.url, service.groupName, statusCode, errorMessage).catch(() => {});
-	if (isServiceEmailEnabled(service)) {
+	if (await shouldSendEmail(service)) {
 		sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-	} else {
-		const enabled = await isEmailEnabledForGroup(service.groupName);
-		if (enabled) {
-			sendServiceDownEmail(service.name, service.url, service.displayUrl, service.groupName, statusCode, errorMessage).catch(() => {});
-		}
 	}
 }
 
 async function sendUpNotifications(service: Service, responseTime: number): Promise<void> {
 	sendServiceUp(service.name, service.displayUrl || service.url, service.groupName, responseTime).catch(() => {});
-	if (isServiceEmailEnabled(service)) {
+	if (await shouldSendEmail(service)) {
 		sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
-	} else {
-		const enabled = await isEmailEnabledForGroup(service.groupName);
-		if (enabled) {
-			sendServiceUpEmail(service.name, service.url, service.displayUrl, service.groupName, responseTime).catch(() => {});
-		}
 	}
 }
 

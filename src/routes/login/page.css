@@ -6,7 +6,7 @@
 	padding: var(--spacing-md);
 }
 
-.card {
+.login-card {
 	background: var(--color-bg-elevated);
 	border: 1px solid var(--color-border);
 	padding: var(--spacing-xl);
@@ -15,7 +15,7 @@
 	box-shadow: var(--shadow-md);
 }
 
-h1 {
+.login-card h1 {
 	margin: 0 0 var(--spacing-lg);
 	font-size: var(--text-xl);
 	font-weight: var(--font-normal);
@@ -23,18 +23,18 @@ h1 {
 	text-align: center;
 }
 
-h1 .brand {
+.login-card h1 .brand {
 	color: var(--color-text);
 	font-weight: var(--font-semibold);
 }
 
-.tabs {
+.login-tabs {
 	display: flex;
 	margin-bottom: var(--spacing-lg);
 	border-bottom: 1px solid var(--color-border);
 }
 
-.tabs a {
+.login-tabs a {
 	flex: 1;
 	padding: var(--spacing-sm) var(--spacing-md);
 	color: var(--color-text-muted);
@@ -46,15 +46,15 @@ h1 .brand {
 	position: relative;
 }
 
-.tabs a:hover {
+.login-tabs a:hover {
 	color: var(--color-text-secondary);
 }
 
-.tabs a.active {
+.login-tabs a.active {
 	color: var(--color-accent);
 }
 
-.tabs a.active::after {
+.login-tabs a.active::after {
 	content: "";
 	position: absolute;
 	bottom: -1px;
@@ -64,7 +64,7 @@ h1 .brand {
 	background: var(--color-accent);
 }
 
-.error {
+.login-error {
 	background: var(--color-error-bg);
 	border-left: 3px solid var(--color-error);
 	color: var(--color-error);
@@ -73,12 +73,12 @@ h1 .brand {
 	font-size: var(--text-sm);
 }
 
-.field {
+.login-field {
 	position: relative;
 	margin-bottom: var(--spacing-md);
 }
 
-label {
+.login-field label {
 	position: absolute;
 	left: var(--spacing-md);
 	top: 50%;
@@ -91,7 +91,7 @@ label {
 	padding: 0 var(--spacing-xs);
 }
 
-input {
+.login-field input {
 	width: 100%;
 	padding: var(--spacing-sm) var(--spacing-md);
 	border: 1px solid var(--color-border);
@@ -101,28 +101,28 @@ input {
 	transition: border-color var(--transition-fast);
 }
 
-input:focus {
+.login-field input:focus {
 	border-color: var(--color-accent);
 	outline: 2px solid var(--color-accent);
 	outline-offset: -1px;
 }
 
-input:focus:not(:focus-visible) {
+.login-field input:focus:not(:focus-visible) {
 	outline: none;
 }
 
-input:focus + label,
-input:not(:placeholder-shown) + label {
+.login-field input:focus + label,
+.login-field input:not(:placeholder-shown) + label {
 	top: 0;
 	font-size: var(--text-xs);
 	color: var(--color-text-secondary);
 }
 
-input:focus + label {
+.login-field input:focus + label {
 	color: var(--color-accent);
 }
 
-.submit {
+.login-submit {
 	width: 100%;
 	padding: var(--spacing-sm) var(--spacing-md);
 	background: transparent;
@@ -135,13 +135,12 @@ input:focus + label {
 	cursor: pointer;
 }
 
-.submit:hover {
+.login-submit:hover {
 	border-color: var(--color-accent);
 	color: var(--color-accent);
 }
 
-.invite-note,
-.first-user-note {
+.login-note {
 	margin: var(--spacing-md) 0 0;
 	font-size: var(--text-sm);
 	color: var(--color-text-muted);

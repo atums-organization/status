@@ -1,15 +1,26 @@
-import type { Group } from "../../../types";
+import type { Group, MasterGroup } from "../../../types";
 import { request } from "./client";
+
+export type { MasterGroup };
 
 export async function getGroups(): Promise<Group[]> {
 	const result = await request<{ groups: Group[] }>("/groups");
 	return result.groups;
 }
 
-export async function upsertGroup(name: string, position?: number, sessionId?: string): Promise<Group> {
+export async function getGroupsHierarchy(): Promise<{ masterGroups: MasterGroup[]; groups: Group[] }> {
+	return await request<{ masterGroups: MasterGroup[]; groups: Group[] }>("/groups/hierarchy");
+}
+
+export async function upsertGroup(
+	name: string,
+	position?: number,
+	parentGroupName?: string | null,
+	sessionId?: string,
+): Promise<Group> {
 	const result = await request<{ group: Group }>("/groups", {
 		method: "POST",
-		body: JSON.stringify({ name, position }),
+		body: JSON.stringify({ name, position, parentGroupName }),
 		sessionId,
 	});
 	return result.group;

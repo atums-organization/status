@@ -1,13 +1,6 @@
 import nodemailer from "nodemailer";
-import type { SiteSettings } from "../../types";
+import type { SiteSettings, EmailOptions } from "../../types";
 import { getSettings } from "../routes/settings";
-
-interface EmailOptions {
-	to: string;
-	subject: string;
-	text: string;
-	html?: string;
-}
 
 async function createTransporter(settings: SiteSettings) {
 	return nodemailer.createTransport({

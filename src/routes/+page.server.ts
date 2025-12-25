@@ -84,9 +84,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		const settings = await api.getSettings();
 		siteName = settings.siteName || "atums/status";
 		siteUrl = settings.siteUrl || "";
-	} catch {
-		// defaults if api dies
-	}
+	} catch {}
 
 	if (!sessionId) {
 		const [services, groups] = await Promise.all([
@@ -430,6 +428,33 @@ export const actions: Actions = {
 		}
 	},
 
+	setGroupParent: async ({ cookies, request, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) return fail(401, { error: "Unauthorized" });
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			clearSession(cookies);
+			return fail(401, { error: "Unauthorized" });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get("name")?.toString().trim();
+		const parentGroupName = formData.get("parentGroupName")?.toString().trim() || null;
+
+		if (!name) {
+			return fail(400, { error: "Group name is required" });
+		}
+
+		try {
+			await api.upsertGroup(name, undefined, parentGroupName, sessionId);
+			await api.auditLog(user.id, "update", "group", name, { parentGroupName }, getClientAddress(), sessionId);
+			return { success: true };
+		} catch (err) {
+			return fail(400, { error: err instanceof Error ? err.message : "Failed to set group parent" });
+		}
+	},
+
 	toggleGroupEmail: async ({ cookies, request, getClientAddress }) => {
 		const sessionId = getSessionId(cookies);
 		if (!sessionId) return fail(401, { error: "Unauthorized" });
@@ -458,6 +483,37 @@ export const actions: Actions = {
 			return { success: true };
 		} catch (err) {
 			return fail(400, { error: err instanceof Error ? err.message : "Failed to update group email" });
+		}
+	},
+
+	createGroup: async ({ cookies, request, getClientAddress }) => {
+		const sessionId = getSessionId(cookies);
+		if (!sessionId) return fail(401, { error: "Unauthorized" });
+
+		const user = await api.getUserById(sessionId, sessionId);
+		if (!user) {
+			clearSession(cookies);
+			return fail(401, { error: "Unauthorized" });
+		}
+
+		if (user.role !== "admin") {
+			return fail(403, { error: "Admin access required" });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get("name")?.toString().trim();
+		const parentGroupName = formData.get("parentGroupName")?.toString().trim() || null;
+
+		if (!name) {
+			return fail(400, { error: "Group name is required" });
+		}
+
+		try {
+			await api.upsertGroup(name, undefined, parentGroupName, sessionId);
+			await api.auditLog(user.id, "create", "group", name, { parentGroupName }, getClientAddress(), sessionId);
+			return { success: true };
+		} catch (err) {
+			return fail(400, { error: err instanceof Error ? err.message : "Failed to create group" });
 		}
 	},
 };

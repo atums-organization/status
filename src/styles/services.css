@@ -171,6 +171,27 @@
 	flex-shrink: 0;
 }
 
+.edit-mode .service-card {
+	padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.edit-mode .service-card .url,
+.edit-mode .service-card .meta,
+.edit-mode .service-card .description,
+.edit-mode .service-card .service-uptime {
+	display: none;
+}
+
+.edit-mode .service-header {
+	margin-bottom: 0;
+}
+
+.edit-mode .service-header h3 {
+	font-size: var(--text-base);
+	margin: 0;
+	line-height: 1;
+}
+
 @media (max-width: 600px) {
 	.service-card {
 		padding: var(--spacing-md);

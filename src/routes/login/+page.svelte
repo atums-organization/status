@@ -8,11 +8,11 @@
 </script>
 
 <div class="login-container">
-	<main id="main-content" class="card">
+	<main id="main-content" class="login-card">
 		<h1><span class="brand">{data.site.brand}</span>{data.site.suffix}</h1>
 
 		{#if !data.isFirstUser}
-			<div class="tabs">
+			<div class="login-tabs">
 				<a href="?page=login" class:active={page === "login"}>Login</a>
 				<a href="?page=register" class:active={page === "register"}
 					>Register</a
@@ -21,12 +21,12 @@
 		{/if}
 
 		{#if form?.error}
-			<div class="error" role="alert">{form.error}</div>
+			<div class="login-error" role="alert">{form.error}</div>
 		{/if}
 
 		{#if page === "login"}
 			<form method="POST" action="?/login">
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="text"
 						id="username"
@@ -37,7 +37,7 @@
 					/>
 					<label for="username">Username</label>
 				</div>
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="password"
 						id="password"
@@ -48,12 +48,12 @@
 					/>
 					<label for="password">Password</label>
 				</div>
-				<button type="submit" class="submit">Login</button>
+				<button type="submit" class="login-submit">Login</button>
 			</form>
 		{:else}
 			<form method="POST" action="?/register">
 				{#if !data.isFirstUser}
-					<div class="field">
+					<div class="login-field">
 						<input
 							type="text"
 							id="inviteCode"
@@ -66,7 +66,7 @@
 						<label for="inviteCode">Invite Code</label>
 					</div>
 				{/if}
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="text"
 						id="reg-username"
@@ -77,7 +77,7 @@
 					/>
 					<label for="reg-username">Username</label>
 				</div>
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="email"
 						id="email"
@@ -88,7 +88,7 @@
 					/>
 					<label for="email">Email</label>
 				</div>
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="password"
 						id="reg-password"
@@ -99,7 +99,7 @@
 					/>
 					<label for="reg-password">Password</label>
 				</div>
-				<div class="field">
+				<div class="login-field">
 					<input
 						type="password"
 						id="confirmPassword"
@@ -110,18 +110,18 @@
 					/>
 					<label for="confirmPassword">Confirm Password</label>
 				</div>
-				<button type="submit" class="submit">Create Account</button>
+				<button type="submit" class="login-submit">Create Account</button>
 			</form>
 
 			{#if data.isFirstUser}
-				<p class="first-user-note">
+				<p class="login-note">
 					Create your admin account to get started.
 				</p>
 			{/if}
 		{/if}
 
 		{#if !data.isFirstUser && page === "login"}
-			<p class="invite-note">
+			<p class="login-note">
 				Need an account? Ask an admin for an invite code.
 			</p>
 		{/if}

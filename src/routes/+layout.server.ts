@@ -16,9 +16,7 @@ export const load: LayoutServerLoad = async () => {
 		siteUrl = settings.siteUrl || "";
 		sourceUrl = settings.sourceUrl || "";
 		discordUrl = settings.discordUrl || "";
-	} catch {
-		// defaults if api kills itself
-	}
+	} catch {}
 
 	const parts = siteName.split("/");
 	const brand = parts[0] || siteName;

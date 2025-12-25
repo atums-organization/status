@@ -33,6 +33,7 @@ function rowToGroup(row: Record<string, unknown>): Group {
 		position: (row.position as number) || 0,
 		emailNotifications: (row.email_notifications as boolean) || false,
 		createdAt: row.created_at as string,
+		parentGroupName: (row.parent_group_name as string) || null,
 	};
 }
 
@@ -324,7 +325,7 @@ export async function updatePositions(req: Request): Promise<Response> {
 
 export async function listGroups(): Promise<Response> {
 	const dbGroups = await sql`
-		SELECT id, name, position, email_notifications, created_at
+		SELECT id, name, position, email_notifications, created_at, parent_group_name
 		FROM groups
 		ORDER BY position ASC, name ASC
 	`;
@@ -346,11 +347,44 @@ export async function listGroups(): Promise<Response> {
 				position: allGroups.length,
 				emailNotifications: false,
 				createdAt: new Date().toISOString(),
+				parentGroupName: null,
 			});
 		}
 	}
 
 	return ok({ groups: allGroups });
+}
+
+export async function listGroupsHierarchy(): Promise<Response> {
+	const dbGroups = await sql`
+		SELECT id, name, position, email_notifications, created_at, parent_group_name
+		FROM groups
+		ORDER BY position ASC, name ASC
+	`;
+
+	const groups = dbGroups.map(rowToGroup);
+
+	const masterGroups: (Group & { subGroups: Group[] })[] = [];
+	const subGroupMap = new Map<string, Group[]>();
+
+	for (const group of groups) {
+		if (group.parentGroupName) {
+			const existing = subGroupMap.get(group.parentGroupName) || [];
+			existing.push(group);
+			subGroupMap.set(group.parentGroupName, existing);
+		}
+	}
+
+	for (const group of groups) {
+		if (!group.parentGroupName) {
+			masterGroups.push({
+				...group,
+				subGroups: (subGroupMap.get(group.name) || []).sort((a, b) => a.position - b.position),
+			});
+		}
+	}
+
+	return ok({ masterGroups, groups });
 }
 
 export async function upsertGroup(req: Request): Promise<Response> {
@@ -360,24 +394,34 @@ export async function upsertGroup(req: Request): Promise<Response> {
 	}
 
 	const body = await req.json();
-	const { name, position } = body;
+	const { name, position, parentGroupName } = body;
 
 	if (!name) {
 		return badRequest("Name required");
 	}
 
+	if (parentGroupName) {
+		const parentExists = await sql`SELECT id, parent_group_name FROM groups WHERE name = ${parentGroupName}`;
+		if (parentExists.length === 0) {
+			return badRequest("Parent group does not exist");
+		}
+		if (parentExists[0].parent_group_name) {
+			return badRequest("Cannot nest more than 2 levels deep");
+		}
+	}
+
 	const existing = await sql`SELECT id FROM groups WHERE name = ${name}`;
 
 	if (existing.length > 0) {
-		await sql`UPDATE groups SET position = ${position ?? 0} WHERE name = ${name}`;
+		await sql`UPDATE groups SET position = ${position ?? 0}, parent_group_name = ${parentGroupName || null} WHERE name = ${name}`;
 	} else {
 		const id = randomUUIDv7();
 		const maxPosResult = await sql`SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM groups`;
 		const nextPosition = position ?? (maxPosResult[0]?.next_pos || 0);
-		await sql`INSERT INTO groups (id, name, position) VALUES (${id}, ${name}, ${nextPosition})`;
+		await sql`INSERT INTO groups (id, name, position, parent_group_name) VALUES (${id}, ${name}, ${nextPosition}, ${parentGroupName || null})`;
 	}
 
-	const rows = await sql`SELECT id, name, position, email_notifications, created_at FROM groups WHERE name = ${name}`;
+	const rows = await sql`SELECT id, name, position, email_notifications, created_at, parent_group_name FROM groups WHERE name = ${name}`;
 	return ok({ group: rowToGroup(rows[0]) });
 }
 
@@ -430,6 +474,7 @@ export async function renameGroup(req: Request): Promise<Response> {
 	}
 
 	await sql`UPDATE groups SET name = ${newName} WHERE name = ${oldName}`;
+	await sql`UPDATE groups SET parent_group_name = ${newName} WHERE parent_group_name = ${oldName}`;
 	await sql`UPDATE services SET group_name = ${newName} WHERE group_name = ${oldName}`;
 
 	return ok({ message: "Group renamed" });
@@ -449,6 +494,7 @@ export async function deleteGroup(req: Request): Promise<Response> {
 	}
 
 	await sql`UPDATE services SET group_name = NULL WHERE group_name = ${name}`;
+	await sql`UPDATE groups SET parent_group_name = NULL WHERE parent_group_name = ${name}`;
 	await sql`DELETE FROM groups WHERE name = ${name}`;
 
 	return noContent();

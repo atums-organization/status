@@ -3,7 +3,7 @@ import * as api from "$lib/server/api";
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/public";
-import type { Service, ServiceCheck, SiteSettings } from "$lib";
+import type { Group, Service, ServiceCheck, SiteSettings } from "$lib";
 
 function calculateEmbed(
 	groupName: string,
@@ -80,8 +80,14 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 	const sessionId = getSessionId(cookies);
 	const timezone = env.PUBLIC_TIMEZONE || "UTC";
 
-	let services;
+	let services: Service[];
 	let user = null;
+	let allGroups: Group[] = [];
+
+	const settings = await api.getSettings().catch(() => null);
+	const siteName = settings?.siteName || "atums/status";
+	const [brand, ...suffixParts] = siteName.split("/");
+	const suffix = suffixParts.length > 0 ? `/${suffixParts.join("/")}` : "";
 
 	if (!sessionId) {
 		services = await api.getPublicServices();
@@ -95,11 +101,34 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 		}
 	}
 
-	const filtered = services.filter(
-		(s) => s.groupName?.toLowerCase() === groupName.toLowerCase(),
-	);
+	try {
+		allGroups = await api.getGroups();
+	} catch {
+		allGroups = [];
+	}
 
-	if (filtered.length === 0) {
+	const subGroups = allGroups.filter(
+		(g) => g.parentGroupName?.toLowerCase() === groupName.toLowerCase(),
+	);
+	const isMasterGroup = subGroups.length > 0;
+
+	let filtered: Service[];
+	if (isMasterGroup) {
+		const subGroupNames = new Set(subGroups.map((g) => g.name.toLowerCase()));
+		filtered = services.filter(
+			(s) => s.groupName && subGroupNames.has(s.groupName.toLowerCase()),
+		);
+	} else {
+		filtered = services.filter(
+			(s) => s.groupName?.toLowerCase() === groupName.toLowerCase(),
+		);
+	}
+
+	const groupExists = allGroups.some(
+		(g) => g.name.toLowerCase() === groupName.toLowerCase(),
+	) || filtered.length > 0;
+
+	if (!groupExists) {
 		error(404, { message: `Group "${groupName}" not found` });
 	}
 
@@ -122,8 +151,28 @@ export const load: PageServerLoad = async ({ cookies, params }) => {
 		if (uptime[s.id]) publicUptime[s.id] = uptime[s.id];
 	}
 
-	const settings = await api.getSettings().catch(() => null);
 	const embed = calculateEmbed(groupName, publicServices, publicChecks, publicUptime, settings);
 
-	return { user, services: filtered, checks, groupName, uptime, timezone, activeEvents, recentEvents, embed };
+	return {
+		user,
+		services: filtered,
+		checks,
+		groups: allGroups,
+		uptime,
+		timezone,
+		embed,
+		site: {
+			brand,
+			suffix,
+			icon: settings?.siteIcon || null,
+			sourceUrl: settings?.sourceUrl || null,
+			discordUrl: settings?.discordUrl || null,
+		},
+		apiUrl: env.PUBLIC_API_URL || "",
+		currentGroup: groupName,
+		isMasterGroup,
+		subGroups: subGroups.sort((a, b) => a.position - b.position),
+		activeEvents,
+		recentEvents,
+	};
 };

@@ -1,6 +1,6 @@
 export type { User } from "./user";
 export type { Service, ServiceCheck, ServiceStats } from "./service";
-export type { Group } from "./group";
+export type { Group, MasterGroup } from "./group";
 export type { EventType, EventStatus, StatusEvent } from "./event";
 export type { NotificationType, Notification } from "./notification";
 export type { AuditLog } from "./audit";
@@ -14,3 +14,5 @@ export type { ExportType, ExportData, ExportGroup, ExportService } from "./expor
 export type { ApiKey, ApiKeyWithKey, ApiKeyScope } from "./apikey";
 export { API_SCOPES } from "./apikey";
 export type { DocsEndpoint, DocsCategory } from "./docs";
+export type { StatusPageData, StatusPageForm } from "./statuspage";
+export type { EmailOptions } from "./email";

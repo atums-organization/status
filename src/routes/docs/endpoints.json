@@ -108,14 +108,20 @@
 				"method": "GET",
 				"path": "/groups",
 				"desc": "list all groups",
-				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"groups\": [\n      {\n        \"name\": \"Production\",\n        \"position\": 0,\n        \"collapsed\": false,\n        \"emailNotifications\": true\n      }\n    ]\n  }\n}"
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"groups\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"Production\",\n        \"position\": 0,\n        \"emailNotifications\": true,\n        \"parentGroupName\": null,\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n      },\n      {\n        \"id\": \"uuid\",\n        \"name\": \"API\",\n        \"position\": 0,\n        \"emailNotifications\": true,\n        \"parentGroupName\": \"Production\",\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n      }\n    ]\n  }\n}"
+			},
+			{
+				"method": "GET",
+				"path": "/groups/hierarchy",
+				"desc": "list groups in hierarchical structure",
+				"response": "{\n  \"success\": true,\n  \"data\": {\n    \"masterGroups\": [\n      {\n        \"id\": \"uuid\",\n        \"name\": \"Production\",\n        \"position\": 0,\n        \"emailNotifications\": true,\n        \"parentGroupName\": null,\n        \"createdAt\": \"2025-01-01T00:00:00.000Z\",\n        \"subGroups\": [\n          {\n            \"id\": \"uuid\",\n            \"name\": \"API\",\n            \"position\": 0,\n            \"emailNotifications\": true,\n            \"parentGroupName\": \"Production\",\n            \"createdAt\": \"2025-01-01T00:00:00.000Z\"\n          }\n        ]\n      }\n    ],\n    \"groups\": [...]\n  }\n}"
 			},
 			{
 				"method": "POST",
 				"path": "/groups",
 				"desc": "create or update a group",
 				"scopes": ["groups:write"],
-				"request": "{\n  \"name\": \"New Group\",\n  \"position\": 0,\n  \"collapsed\": false\n}",
+				"request": "{\n  \"name\": \"New Group\",\n  \"position\": 0,\n  \"parentGroupName\": \"Production\"\n}",
 				"response": "{\n  \"success\": true,\n  \"data\": { \"group\": { ... } }\n}"
 			},
 			{

@@ -12,6 +12,7 @@ function rowToExportGroup(row: Record<string, unknown>): ExportGroup {
 		name: row.name as string,
 		position: (row.position as number) || 0,
 		emailNotifications: (row.email_notifications as boolean) || false,
+		parentGroupName: (row.parent_group_name as string) || null,
 	};
 }
 

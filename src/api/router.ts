@@ -80,6 +80,10 @@ const routes: Route[] = [
 		handlers: { GET: services.listGroups, POST: services.upsertGroup },
 	},
 	{
+		pattern: /^\/groups\/hierarchy$/,
+		handlers: { GET: services.listGroupsHierarchy },
+	},
+	{
 		pattern: /^\/groups\/positions$/,
 		handlers: { PUT: services.updateGroupPositions },
 	},

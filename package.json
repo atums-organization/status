@@ -7,7 +7,7 @@
 		"dev": "bun run dev:api & bun run dev:web",
 		"dev:api": "bun --watch run src/api/index.ts",
 		"dev:web": "bunx vite dev",
-		"build": "bunx vite build",
+		"build": "echo \"export const VERSION = \\\"$(git rev-parse --short HEAD)\\\";\" > src/api/version.generated.ts && bunx vite build",
 		"preview": "bunx vite preview",
 		"start": "bun run start:api & bun run start:web",
 		"start:api": "bun run src/api/index.ts",

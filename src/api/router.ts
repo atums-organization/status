@@ -7,6 +7,7 @@ import * as exportData from "./routes/export";
 import * as invites from "./routes/invites";
 import * as services from "./routes/services";
 import * as settings from "./routes/settings";
+import * as version from "./routes/version";
 import * as webhooks from "./routes/webhooks";
 import { handleSSE } from "./utils/sse";
 import { notFound } from "./utils/response";
@@ -15,6 +16,10 @@ import type { Route } from "../types";
 const basePath = process.env.API_BASE_PATH || "";
 
 const routes: Route[] = [
+	{
+		pattern: /^\/version$/,
+		handlers: { GET: version.get },
+	},
 	{
 		pattern: /^\/events\/stream$/,
 		handlers: { GET: handleSSE },

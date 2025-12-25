@@ -251,25 +251,30 @@ export const actions: Actions = {
 		if (data.has("smtpUser")) settings.smtpUser = data.get("smtpUser")?.toString() || "";
 		if (data.has("smtpPass")) settings.smtpPass = data.get("smtpPass")?.toString() || "";
 		if (data.has("smtpFrom")) settings.smtpFrom = data.get("smtpFrom")?.toString() || "";
-		if (data.has("_emailForm")) {
+		if (data.has("smtpSecure") || data.has("smtpEnabled")) {
 			settings.smtpSecure = data.get("smtpSecure") === "on";
 			settings.smtpEnabled = data.get("smtpEnabled") === "on";
+		}
+		if (data.has("emailIsGlobal")) {
 			settings.emailIsGlobal = data.get("emailIsGlobal")?.toString() === "true";
+		}
+		if (data.has("emailGroups")) {
 			const emailGroupsJson = data.get("emailGroups")?.toString() || "[]";
 			try {
 				settings.emailGroups = JSON.parse(emailGroupsJson);
 			} catch {
 				settings.emailGroups = [];
 			}
-			if (data.has("retryCount")) {
-				settings.retryCount = Number.parseInt(data.get("retryCount")?.toString() || "0", 10);
-			}
+		}
+		if (data.has("retryCount")) {
+			settings.retryCount = Number.parseInt(data.get("retryCount")?.toString() || "0", 10);
 		}
 		if (data.has("emailTo")) settings.emailTo = data.get("emailTo")?.toString() || "";
 
 		try {
 			await api.updateSettings(settings, sessionId);
-			await api.auditLog(user.id, "update", "settings", "site", settings, getClientAddress(), sessionId);
+			const { smtpPass: _, ...safeSettings } = settings;
+			await api.auditLog(user.id, "update", "settings", "site", safeSettings, getClientAddress(), sessionId);
 			return { siteSuccess: "settings updated" };
 		} catch (err) {
 			return fail(400, {

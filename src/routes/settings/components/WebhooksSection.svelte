@@ -129,7 +129,6 @@
 			};
 		}}
 	>
-		<input type="hidden" name="_emailForm" value="1" />
 		<div class="form-group">
 			<input
 				type="number"
@@ -171,7 +170,6 @@
 			};
 		}}
 	>
-		<input type="hidden" name="_emailForm" value="1" />
 		<div class="checkbox-group">
 			<label class="checkbox-label">
 				<input type="checkbox" name="smtpEnabled" bind:checked={smtpEnabled} />

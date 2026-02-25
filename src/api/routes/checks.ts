@@ -429,7 +429,7 @@ async function filterAccessibleServiceIds(req: Request, serviceIds: string[]): P
 	const serviceRows = await sql`
 		SELECT id, is_public, created_by
 		FROM services
-		WHERE id = ANY(${serviceIds})
+		WHERE id = ANY(${sql.array(serviceIds, "UUID")})
 	`;
 
 	const auth = await getAuthContext(req);
@@ -461,7 +461,7 @@ export async function getLatestBatch(req: Request): Promise<Response> {
 	const rows = await sql`
 		SELECT DISTINCT ON (service_id) id, service_id, status_code, response_time, success, error_message, checked_at
 		FROM service_checks
-		WHERE service_id = ANY(${allowedIds})
+		WHERE service_id = ANY(${sql.array(allowedIds, "UUID")})
 		ORDER BY service_id, checked_at DESC
 	`;
 
@@ -496,7 +496,7 @@ export async function getStatsBatch(req: Request): Promise<Response> {
 			COUNT(*) as total_checks,
 			COUNT(*) FILTER (WHERE success = true) as successful_checks
 		FROM service_checks
-		WHERE service_id = ANY(${allowedIds})
+		WHERE service_id = ANY(${sql.array(allowedIds, "UUID")})
 		AND checked_at > NOW() - INTERVAL '24 hours'
 		GROUP BY service_id
 	`;

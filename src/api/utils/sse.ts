@@ -29,11 +29,14 @@ export function broadcastCheck(serviceId: string, check: ServiceCheck): void {
 }
 
 export function createSSEResponse(): Response {
+	let clientId: string;
+	let keepAlive: ReturnType<typeof setInterval>;
+
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
-			const clientId = addClient(controller);
+			clientId = addClient(controller);
 
-			const keepAlive = setInterval(() => {
+			keepAlive = setInterval(() => {
 				try {
 					controller.enqueue(encoder.encode(": keepalive\n\n"));
 				} catch {
@@ -45,6 +48,8 @@ export function createSSEResponse(): Response {
 			controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "connected", clientId })}\n\n`));
 		},
 		cancel() {
+			clearInterval(keepAlive);
+			removeClient(clientId);
 		},
 	});
 

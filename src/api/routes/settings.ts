@@ -3,6 +3,7 @@ import type { SiteSettings } from "../../types";
 import { getAuthContext, requireAuth, requireAdmin } from "../utils/auth";
 import { ok, badRequest, unauthorized, forbidden } from "../utils/response";
 import { sendTestEmail as sendTest } from "../utils/email";
+import { invalidateSettingsCache } from "./checks";
 
 export type { SiteSettings };
 
@@ -160,6 +161,8 @@ export async function update(req: Request): Promise<Response> {
 			ON CONFLICT (key) DO UPDATE SET value = ${value}, updated_at = NOW()
 		`;
 	}
+
+	invalidateSettingsCache();
 
 	const settings = await getSettings();
 	return ok({ settings });

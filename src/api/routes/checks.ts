@@ -77,17 +77,33 @@ const checkIntervals = new Map<string, ReturnType<typeof setInterval>>();
 const lastCheckStatus = new Map<string, boolean>();
 const consecutiveFailures = new Map<string, number>();
 const notifiedDown = new Map<string, boolean>();
+const checkInProgress = new Set<string>();
+
+const SETTINGS_CACHE_TTL = 60_000;
+let cachedRetryCount: { value: number; expires: number } | null = null;
+let cachedCheckTimeout: { value: number; expires: number } | null = null;
 
 async function getRetryCount(): Promise<number> {
+	const now = Date.now();
+	if (cachedRetryCount && now < cachedRetryCount.expires) return cachedRetryCount.value;
 	const rows = await sql`SELECT value FROM settings WHERE key = 'retry_count'`;
-	if (rows.length === 0) return 0;
-	return Number.parseInt(rows[0].value as string, 10) || 0;
+	const value = rows.length === 0 ? 0 : Number.parseInt(rows[0].value as string, 10) || 0;
+	cachedRetryCount = { value, expires: now + SETTINGS_CACHE_TTL };
+	return value;
 }
 
 async function getCheckTimeout(): Promise<number> {
+	const now = Date.now();
+	if (cachedCheckTimeout && now < cachedCheckTimeout.expires) return cachedCheckTimeout.value;
 	const rows = await sql`SELECT value FROM settings WHERE key = 'check_timeout'`;
-	if (rows.length === 0) return 30000;
-	return Number.parseInt(rows[0].value as string, 10) || 30000;
+	const value = rows.length === 0 ? 30000 : Number.parseInt(rows[0].value as string, 10) || 30000;
+	cachedCheckTimeout = { value, expires: now + SETTINGS_CACHE_TTL };
+	return value;
+}
+
+export function invalidateSettingsCache(): void {
+	cachedRetryCount = null;
+	cachedCheckTimeout = null;
 }
 
 async function shouldSendEmail(service: Service): Promise<boolean> {
@@ -142,17 +158,16 @@ async function performSingleCheck(service: Service, timeoutMs: number): Promise<
 	let success = false;
 	let errorMessage: string | null = null;
 
-	try {
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort("timeout"), timeoutMs);
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort("timeout"), timeoutMs);
 
+	try {
 		const response = await fetch(service.url, {
 			method: "GET",
 			signal: controller.signal,
 			headers: { "User-Agent": "atums-status/1.0" },
 		});
 
-		clearTimeout(timeoutId);
 		statusCode = response.status;
 
 		const errors: string[] = [];
@@ -200,6 +215,8 @@ async function performSingleCheck(service: Service, timeoutMs: number): Promise<
 			errorMessage = "Unknown error";
 		}
 		success = false;
+	} finally {
+		clearTimeout(timeoutId);
 	}
 
 	return {
@@ -235,7 +252,9 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		consecutiveFailures.set(service.id, 0);
 		if (wasNotifiedDown) {
 			notifiedDown.set(service.id, false);
-			sendUpNotifications(service, responseTime);
+			sendUpNotifications(service, responseTime).catch((err) =>
+				console.error(`[Notification] Error sending up notification for ${service.name}:`, err),
+			);
 		}
 	} else {
 		const failures = (consecutiveFailures.get(service.id) || 0) + 1;
@@ -244,7 +263,9 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 		const alreadyNotified = notifiedDown.get(service.id) || false;
 		if (!alreadyNotified && failures > retryCount) {
 			notifiedDown.set(service.id, true);
-			sendDownNotifications(service, statusCode, errorMessage);
+			sendDownNotifications(service, statusCode, errorMessage).catch((err) =>
+				console.error(`[Notification] Error sending down notification for ${service.name}:`, err),
+			);
 		}
 	}
 
@@ -261,6 +282,18 @@ async function performCheck(service: Service): Promise<ServiceCheck> {
 	broadcastCheck(service.id, check);
 
 	return check;
+}
+
+async function performScheduledCheck(service: Service): Promise<void> {
+	if (checkInProgress.has(service.id)) return;
+	checkInProgress.add(service.id);
+	try {
+		await performCheck(service);
+	} catch (err) {
+		console.error(`[Check] Error checking ${service.name}:`, err);
+	} finally {
+		checkInProgress.delete(service.id);
+	}
 }
 
 async function canAccessService(req: Request, serviceId: string): Promise<{ allowed: boolean; service?: Service; response?: Response }> {
@@ -390,6 +423,27 @@ export async function getLatestForService(
 	return ok({ check: rows.length > 0 ? rowToCheck(rows[0]) : null });
 }
 
+async function filterAccessibleServiceIds(req: Request, serviceIds: string[]): Promise<string[]> {
+	if (serviceIds.length === 0) return [];
+
+	const serviceRows = await sql`
+		SELECT id, is_public, created_by
+		FROM services
+		WHERE id = ANY(${serviceIds})
+	`;
+
+	const auth = await getAuthContext(req);
+	const isAuthed = requireAuth(auth);
+
+	return serviceRows
+		.filter((row: Record<string, unknown>) => {
+			if (row.is_public) return true;
+			if (!isAuthed) return false;
+			return auth.user.id === row.created_by || auth.isAdmin;
+		})
+		.map((row: Record<string, unknown>) => row.id as string);
+}
+
 export async function getLatestBatch(req: Request): Promise<Response> {
 	const body = await req.json();
 	const { serviceIds } = body;
@@ -398,21 +452,25 @@ export async function getLatestBatch(req: Request): Promise<Response> {
 		return badRequest("serviceIds array required");
 	}
 
+	const allowedIds = await filterAccessibleServiceIds(req, serviceIds);
+
+	if (allowedIds.length === 0) {
+		return ok({ checks: {} });
+	}
+
+	const rows = await sql`
+		SELECT DISTINCT ON (service_id) id, service_id, status_code, response_time, success, error_message, checked_at
+		FROM service_checks
+		WHERE service_id = ANY(${allowedIds})
+		ORDER BY service_id, checked_at DESC
+	`;
+
 	const checks: Record<string, ServiceCheck | null> = {};
-
-	for (const serviceId of serviceIds) {
-		const access = await canAccessService(req, serviceId);
-		if (!access.allowed) continue;
-
-		const rows = await sql`
-			SELECT id, service_id, status_code, response_time, success, error_message, checked_at
-			FROM service_checks
-			WHERE service_id = ${serviceId}
-			ORDER BY checked_at DESC
-			LIMIT 1
-		`;
-
-		checks[serviceId] = rows.length > 0 ? rowToCheck(rows[0]) : null;
+	for (const id of allowedIds) {
+		checks[id] = null;
+	}
+	for (const row of rows) {
+		checks[row.service_id as string] = rowToCheck(row);
 	}
 
 	return ok({ checks });
@@ -426,31 +484,32 @@ export async function getStatsBatch(req: Request): Promise<Response> {
 		return badRequest("serviceIds array required");
 	}
 
-	if (serviceIds.length === 0) {
+	const allowedIds = await filterAccessibleServiceIds(req, serviceIds);
+
+	if (allowedIds.length === 0) {
 		return ok({ stats: {} });
 	}
 
+	const rows = await sql`
+		SELECT
+			service_id,
+			COUNT(*) as total_checks,
+			COUNT(*) FILTER (WHERE success = true) as successful_checks
+		FROM service_checks
+		WHERE service_id = ANY(${allowedIds})
+		AND checked_at > NOW() - INTERVAL '24 hours'
+		GROUP BY service_id
+	`;
+
 	const stats: Record<string, { uptimePercent: number; totalChecks: number }> = {};
-
-	for (const serviceId of serviceIds) {
-		const access = await canAccessService(req, serviceId);
-		if (!access.allowed) continue;
-
-		const rows = await sql`
-			SELECT
-				COUNT(*) as total_checks,
-				COUNT(*) FILTER (WHERE success = true) as successful_checks
-			FROM service_checks
-			WHERE service_id = ${serviceId}
-			AND checked_at > NOW() - INTERVAL '24 hours'
-		`;
-
-		const row = rows[0] || {};
+	for (const id of allowedIds) {
+		stats[id] = { uptimePercent: 100, totalChecks: 0 };
+	}
+	for (const row of rows) {
 		const totalChecks = Number(row.total_checks) || 0;
 		const successfulChecks = Number(row.successful_checks) || 0;
 		const uptimePercent = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 100;
-
-		stats[serviceId] = {
+		stats[row.service_id as string] = {
 			uptimePercent: Math.round(uptimePercent * 100) / 100,
 			totalChecks,
 		};
@@ -530,10 +589,10 @@ export async function startChecker(
 		clearInterval(checkIntervals.get(serviceId));
 	}
 
-	performCheck(service);
+	performScheduledCheck(service);
 
 	const interval = setInterval(() => {
-		performCheck(service);
+		performScheduledCheck(service);
 	}, service.checkInterval * 1000);
 
 	checkIntervals.set(serviceId, interval);
@@ -573,6 +632,16 @@ export async function stopChecker(
 	return ok({ message: `Checker stopped for service ${serviceId}` });
 }
 
+const CLEANUP_INTERVAL = 24 * 60 * 60 * 1000;
+
+async function cleanupOldChecks(): Promise<void> {
+	try {
+		await sql`DELETE FROM service_checks WHERE checked_at < NOW() - INTERVAL '30 days'`;
+	} catch (err) {
+		console.error("[Cleanup] Error deleting old checks:", err);
+	}
+}
+
 export async function initializeCheckers(): Promise<void> {
 	const rows = await sql`
 		SELECT id, name, description, url, display_url, expected_status, expected_content_type, expected_body, check_interval, enabled, is_public, email_notifications, group_name, position, created_by, created_at, updated_at
@@ -583,14 +652,17 @@ export async function initializeCheckers(): Promise<void> {
 	for (const row of rows) {
 		const service = rowToService(row);
 
-		performCheck(service);
+		performScheduledCheck(service);
 
 		const interval = setInterval(() => {
-			performCheck(service);
+			performScheduledCheck(service);
 		}, service.checkInterval * 1000);
 
 		checkIntervals.set(service.id, interval);
 	}
+
+	cleanupOldChecks();
+	setInterval(cleanupOldChecks, CLEANUP_INTERVAL);
 }
 
 export async function startCheckerForService(serviceId: string): Promise<void> {
@@ -608,10 +680,10 @@ export async function startCheckerForService(serviceId: string): Promise<void> {
 		clearInterval(checkIntervals.get(serviceId));
 	}
 
-	performCheck(service);
+	performScheduledCheck(service);
 
 	const interval = setInterval(() => {
-		performCheck(service);
+		performScheduledCheck(service);
 	}, service.checkInterval * 1000);
 
 	checkIntervals.set(serviceId, interval);

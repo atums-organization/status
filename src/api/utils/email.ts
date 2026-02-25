@@ -2,6 +2,14 @@ import nodemailer from "nodemailer";
 import type { SiteSettings, EmailOptions } from "../../types";
 import { getSettings } from "../routes/settings";
 
+function escapeHtml(str: string): string {
+	return str
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
 async function createTransporter(settings: SiteSettings) {
 	return nodemailer.createTransport({
 		host: settings.smtpHost,
@@ -72,15 +80,15 @@ export async function sendServiceDownEmail(
 		.join("\n");
 
 	const html = `
-		<h2 style="color: #ef4444;">Service Down: ${serviceName}</h2>
-		<p><strong>URL:</strong> <a href="${shownUrl}">${shownUrl}</a></p>
-		${displayUrl && displayUrl !== checkUrl ? `<p><strong>Check URL:</strong> <a href="${checkUrl}">${checkUrl}</a></p>` : ""}
-		${groupName ? `<p><strong>Group:</strong> ${groupName}</p>` : ""}
+		<h2 style="color: #ef4444;">Service Down: ${escapeHtml(serviceName)}</h2>
+		<p><strong>URL:</strong> <a href="${escapeHtml(shownUrl)}">${escapeHtml(shownUrl)}</a></p>
+		${displayUrl && displayUrl !== checkUrl ? `<p><strong>Check URL:</strong> <a href="${escapeHtml(checkUrl)}">${escapeHtml(checkUrl)}</a></p>` : ""}
+		${groupName ? `<p><strong>Group:</strong> ${escapeHtml(groupName)}</p>` : ""}
 		${statusCode ? `<p><strong>Status Code:</strong> ${statusCode}</p>` : ""}
-		${errorMessage ? `<p><strong>Error:</strong> ${errorMessage}</p>` : ""}
+		${errorMessage ? `<p><strong>Error:</strong> ${escapeHtml(errorMessage)}</p>` : ""}
 		<p><strong>Time:</strong> ${new Date().toISOString()}</p>
 		<hr>
-		<p style="color: #666; font-size: 12px;">Sent by ${siteName}</p>
+		<p style="color: #666; font-size: 12px;">Sent by ${escapeHtml(siteName)}</p>
 	`;
 
 	await sendEmail({
@@ -122,14 +130,14 @@ export async function sendServiceUpEmail(
 		.join("\n");
 
 	const html = `
-		<h2 style="color: #22c55e;">Service Up: ${serviceName}</h2>
-		<p><strong>URL:</strong> <a href="${shownUrl}">${shownUrl}</a></p>
-		${displayUrl && displayUrl !== checkUrl ? `<p><strong>Check URL:</strong> <a href="${checkUrl}">${checkUrl}</a></p>` : ""}
-		${groupName ? `<p><strong>Group:</strong> ${groupName}</p>` : ""}
+		<h2 style="color: #22c55e;">Service Up: ${escapeHtml(serviceName)}</h2>
+		<p><strong>URL:</strong> <a href="${escapeHtml(shownUrl)}">${escapeHtml(shownUrl)}</a></p>
+		${displayUrl && displayUrl !== checkUrl ? `<p><strong>Check URL:</strong> <a href="${escapeHtml(checkUrl)}">${escapeHtml(checkUrl)}</a></p>` : ""}
+		${groupName ? `<p><strong>Group:</strong> ${escapeHtml(groupName)}</p>` : ""}
 		<p><strong>Response Time:</strong> ${responseTime}ms</p>
 		<p><strong>Time:</strong> ${new Date().toISOString()}</p>
 		<hr>
-		<p style="color: #666; font-size: 12px;">Sent by ${siteName}</p>
+		<p style="color: #666; font-size: 12px;">Sent by ${escapeHtml(siteName)}</p>
 	`;
 
 	await sendEmail({

@@ -2,11 +2,11 @@
 import "./page.css";
 import endpointsData from "./endpoints.json";
 import favicon from "$lib/assets/favicon.svg";
-import { UserMenu, type DocsEndpoint, type DocsCategory } from "$lib";
+import { ThemeToggle, UserMenu, type DocsEndpoint, type DocsCategory } from "$lib";
 
 const { data } = $props();
-const apiBase = data.apiBase;
-const siteIcon = data.site.icon || favicon;
+const apiBase = $derived(data.apiBase);
+const siteIcon = $derived(data.site.icon || favicon);
 
 let filterScopes = $state<string[]>([]);
 
@@ -77,6 +77,7 @@ const filteredEndpoints = $derived(
 			</nav>
 		</div>
 		<div class="header-actions">
+			<ThemeToggle />
 			{#if data.user}
 				<UserMenu user={data.user} />
 			{:else}

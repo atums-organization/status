@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from "$app/stores";
 	import { env } from "$env/dynamic/public";
+	import { ThemeToggle } from "$lib";
 	import "./error.css";
 
 	const discordUrl = env.PUBLIC_DISCORD_URL || null;
@@ -17,8 +18,9 @@
 
 <div class="container">
 	<header class="header">
-		<h1><a href="/" class="brand-link"><span class="brand">{brand}</span>{suffix}</a></h1>
-		<nav class="nav">
+		<div class="header-left">
+			<h1><a href="/" class="brand-link"><span class="brand">{brand}</span>{suffix}</a></h1>
+			<nav class="nav">
 			<a href="/" class="nav-link">index</a>
 			{#if sourceUrl}
 				<a href={sourceUrl} target="_blank" rel="noopener noreferrer" class="nav-link">source</a>
@@ -27,6 +29,10 @@
 				<a href={discordUrl} target="_blank" rel="noopener noreferrer" class="nav-link">discord</a>
 			{/if}
 		</nav>
+		</div>
+		<div class="header-actions">
+			<ThemeToggle />
+		</div>
 	</header>
 
 	<main id="main-content" class="main centered">

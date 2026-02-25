@@ -438,7 +438,6 @@
 	color: var(--color-text);
 	font-size: var(--text-sm);
 	font-family: inherit;
-	color-scheme: dark;
 }
 
 .date-input:focus-visible {
@@ -940,10 +939,6 @@
 	font-size: var(--text-sm);
 	font-family: inherit;
 	box-sizing: border-box;
-}
-
-.create-form input[type="date"] {
-	color-scheme: dark;
 }
 
 .create-form input:focus {

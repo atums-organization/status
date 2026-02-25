@@ -1,5 +1,5 @@
 <script lang="ts">
-import { UserMenu } from "$lib";
+import { ThemeToggle, UserMenu } from "$lib";
 import favicon from "$lib/assets/favicon.svg";
 import type { PageData } from "./$types";
 import "./page.css";
@@ -26,6 +26,7 @@ const siteIcon = $derived(data.site.icon || favicon);
 			</nav>
 		</div>
 		<div class="header-actions">
+			<ThemeToggle />
 			<UserMenu user={data.user} />
 		</div>
 	</header>

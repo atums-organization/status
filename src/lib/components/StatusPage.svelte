@@ -6,6 +6,7 @@
 		type ServiceStats,
 		type StatusPageData,
 		type StatusPageForm,
+		ThemeToggle,
 		UserMenu,
 		formatDateTime,
 		formatShortTime as formatShortTimeUtil,
@@ -28,14 +29,7 @@
 		isGroupView ? `/${encodeURIComponent(data.currentGroup!)}` : "/",
 	);
 
-	// eslint-disable-next-line svelte/prefer-writable-derived -- need mutable state for SSE updates
-	let checks = $state<Record<string, ServiceCheck | null>>({
-		...data.checks,
-	});
-
-	$effect(() => {
-		checks = { ...data.checks };
-	});
+	let checks = $derived<Record<string, ServiceCheck | null>>({ ...data.checks });
 
 	onMount(() => {
 		const cleanup = createSSEConnection((serviceId, check) => {
@@ -748,6 +742,7 @@
 			</nav>
 		</div>
 		<div class="header-actions">
+			<ThemeToggle />
 			{#if data.user}
 				{#if editMode && !isGroupView}
 					<div class="add-menu-container">

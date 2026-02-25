@@ -5,13 +5,13 @@
 
 	const { settings }: { settings: SiteSettings | null } = $props();
 
-	let siteName = $state(settings?.siteName || "");
-	let siteIcon = $state(settings?.siteIcon || "");
-	let siteUrl = $state(settings?.siteUrl || "");
-	let sourceUrl = $state(settings?.sourceUrl || "");
-	let discordUrl = $state(settings?.discordUrl || "");
-	let securityContact = $state(settings?.securityContact || "");
-	let securityCanonical = $state(settings?.securityCanonical || "");
+	let siteName = $state("");
+	let siteIcon = $state("");
+	let siteUrl = $state("");
+	let sourceUrl = $state("");
+	let discordUrl = $state("");
+	let securityContact = $state("");
+	let securityCanonical = $state("");
 
 	$effect(() => {
 		if (settings) {

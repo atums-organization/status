@@ -4,7 +4,7 @@ import type { AuditLog } from "$lib";
 
 const { initialLogs = [] }: { initialLogs?: AuditLog[] } = $props();
 
-let logs = $state<AuditLog[]>(initialLogs ?? []);
+let logs = $derived<AuditLog[]>(initialLogs ?? []);
 let loading = $state(true);
 let total = $state(0);
 let page = $state(1);

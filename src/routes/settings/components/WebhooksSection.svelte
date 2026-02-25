@@ -25,17 +25,34 @@
 	const globalWebhooks = $derived(webhooks.filter((w) => w.isGlobal));
 	const groupWebhooks = $derived(webhooks.filter((w) => !w.isGlobal));
 
-	let retryCount = $state(settings?.retryCount || 0);
-	let smtpHost = $state(settings?.smtpHost || "");
-	let smtpPort = $state(settings?.smtpPort || "587");
-	let smtpUser = $state(settings?.smtpUser || "");
-	let smtpPass = $state(settings?.smtpPass || "");
-	let smtpFrom = $state(settings?.smtpFrom || "");
-	let smtpSecure = $state(settings?.smtpSecure || false);
-	let smtpEnabled = $state(settings?.smtpEnabled || false);
-	let emailTo = $state(settings?.emailTo || "");
-	let emailIsGlobal = $state(settings?.emailIsGlobal !== false);
-	let emailGroups = $state<string[]>(settings?.emailGroups || []);
+	const s = $derived(settings);
+	let retryCount = $state(0);
+	let smtpHost = $state("");
+	let smtpPort = $state("587");
+	let smtpUser = $state("");
+	let smtpPass = $state("");
+	let smtpFrom = $state("");
+	let smtpSecure = $state(false);
+	let smtpEnabled = $state(false);
+	let emailTo = $state("");
+	let emailIsGlobal = $state(true);
+	let emailGroups = $state<string[]>([]);
+
+	$effect(() => {
+		if (s) {
+			retryCount = s.retryCount || 0;
+			smtpHost = s.smtpHost || "";
+			smtpPort = s.smtpPort || "587";
+			smtpUser = s.smtpUser || "";
+			smtpPass = s.smtpPass || "";
+			smtpFrom = s.smtpFrom || "";
+			smtpSecure = s.smtpSecure || false;
+			smtpEnabled = s.smtpEnabled || false;
+			emailTo = s.emailTo || "";
+			emailIsGlobal = s.emailIsGlobal !== false;
+			emailGroups = s.emailGroups || [];
+		}
+	});
 	let sendingTestEmail = $state(false);
 	let testEmailError = $state("");
 	let testEmailSuccess = $state(false);

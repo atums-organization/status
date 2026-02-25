@@ -1,6 +1,6 @@
 declare global {
 	namespace App {}
-	const __COMMIT_HASH__: string;
+	const __APP_VERSION__: string;
 }
 
 export {};

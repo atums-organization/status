@@ -1,16 +1,12 @@
-import { execSync } from "child_process";
 import { ok } from "../utils/response";
+import pkg from "../../../package.json";
 
-let commitHash = "dev";
+let appVersion = pkg.version;
 
 try {
 	const generated = await import("../version.generated");
-	commitHash = generated.VERSION;
-} catch {
-	try {
-		commitHash = execSync("git rev-parse --short HEAD").toString().trim();
-	} catch {}
-}
+	appVersion = generated.VERSION;
+} catch {}
 
 const rateLimit = new Map<string, number>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -45,5 +41,5 @@ export async function get(req: Request): Promise<Response> {
 		});
 	}
 
-	return ok({ version: commitHash });
+	return ok({ version: appVersion });
 }
